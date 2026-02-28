@@ -22,7 +22,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.diff.outputs.changed || github.event.inputs.force }}
+      changed: ${{ github.event.inputs.force && 'true' || steps.diff.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
 
