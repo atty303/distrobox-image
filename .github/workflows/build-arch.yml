@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       force:
+        type: boolean
         description: 'Force build'
         required: false
-        default: 'false'
+        default: false
   schedule:
     - cron: "17 * * * *"
 
@@ -16,13 +17,12 @@ permissions:
 
 env:
   BASE_IMAGE: quay.io/toolbx/arch-toolbox:latest
-  FORCE: ${{ github.event.inputs.force == 'true' }}
 
 jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.diff.outputs.changed || env.FORCE }}
+      changed: ${{ steps.diff.outputs.changed || github.event.inputs.force }}
     steps:
       - uses: actions/checkout@v4
 
