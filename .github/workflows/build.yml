@@ -21,7 +21,7 @@ jobs:
 
       # 前回digestをキャッシュから復元
       - name: Restore base digest cache
-      - uses: actions/cache@v4
+        uses: actions/cache@v4
         with:
           path: .ci/base-digest
           key: base-digest-${{ env.BASE_IMAGE }}
