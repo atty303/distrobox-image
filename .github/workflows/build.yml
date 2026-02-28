@@ -1,0 +1,90 @@
+name: Build on base image change
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  BASE_IMAGE: quay.io/toolbx/arch-toolbox:latest
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/arch-toolbox-paru
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 前回digestをキャッシュから復元
+      - name: Restore base digest cache
+      - uses: actions/cache@v4
+        with:
+          path: .ci/base-digest
+          key: base-digest-${{ env.BASE_IMAGE }}
+          restore-keys: |
+            base-digest-
+
+      - name: Ensure cache dir
+        run: mkdir -p .ci
+
+      # digest取得（Dockerでmanifest inspectできる）
+      - name: Get current base manifest digest
+        id: base
+        run: |
+          set -euo pipefail
+          # docker buildx はデフォでいる。念のため有効化
+          docker buildx version
+          # digestを取る（platform混在なら必要に応じて --platform を指定）
+          DIGEST="$(docker buildx imagetools inspect "${BASE_IMAGE}" --format '{{json .Manifest.Digest}}' | tr -d '"')"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "$DIGEST" > .ci/base-digest.new
+          echo "Current base digest: $DIGEST"
+
+      - name: Compare with previous digest
+        id: diff
+        run: |
+          set -euo pipefail
+          PREV=""
+          if [ -f .ci/base-digest ]; then PREV="$(cat .ci/base-digest)"; fi
+          CUR="${{ steps.base.outputs.digest }}"
+          echo "prev=$PREV" >> "$GITHUB_OUTPUT"
+          if [ "$PREV" != "$CUR" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Base image changed: $PREV -> $CUR"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Base image unchanged."
+          fi
+
+      # 変更があったらdigestを更新してキャッシュ保存
+      - name: Update stored digest
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          mv .ci/base-digest.new .ci/base-digest
+
+      # GHCRログイン（pushするなら必要）
+      - name: Log in to GHCR
+        if: steps.diff.outputs.changed == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      # Build & Push（変更があった時だけ）
+      - name: Build and push
+        if: steps.diff.outputs.changed == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: arch-toolbox-paru
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+          # ここは必要に応じて
+          # platforms: linux/amd64,linux/arm64
+          # build-args: |
+          #   BASE_IMAGE=${{ env.BASE_IMAGE }}

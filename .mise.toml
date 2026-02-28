@@ -1,0 +1,5 @@
+[tasks.build]
+run = [
+    "podman build -t ghcr.io/atty303/arch-toolbox-paru:latest arch-toolbox-paru",
+    "podman build -t ghcr.io/atty303/dms:latest dms",
+]
