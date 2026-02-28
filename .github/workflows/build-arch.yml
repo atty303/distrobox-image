@@ -36,7 +36,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DIGEST="$(docker buildx imagetools inspect "${BASE_IMAGE}" --format '{{.Manifest.Digest}}')"
+          DIGEST="$(docker buildx imagetools inspect "${BASE_IMAGE}" --format '{{printf "%s" .Manifest.Digest}}')"
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "$DIGEST" > .ci/base-digest.new
           echo "Current base digest: $DIGEST"
