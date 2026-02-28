@@ -1,0 +1,4 @@
+FROM ghcr.io/atty303/arch-toolbox-paru
+
+RUN sudo -H -u builder paru -Sy --noconfirm vulkan-headers quickshell-git cups-pk-helper kimageformats matugen cava pipewire-jack khal fprintd sway
+RUN sudo -H -u builder paru -Sy --noconfirm dms-shell-bin dsearch-bin

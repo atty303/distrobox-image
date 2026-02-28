@@ -1,7 +1,18 @@
-FROM quay.io/toolbx/arch-toolbox:latest
+FROM quay.io/toolbx/arch-toolbox:latest AS base
 
-# makepkg cannot be executed as root, so add a regular user for building
-RUN useradd builder -u 2000 -m && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN --mount=type=cache,target=/var/lib/pacman/sync,id=pacman-sync \
+    --mount=type=cache,target=/var/cache/pacman/pkg,id=pacman-cache \
+    pacman -Syyu --noconfirm && \
+    pacman -S --needed --noconfirm git base-devel
+
+# makepkg/paru cannot be executed as root, so add a regular user for building
+RUN useradd -u 2000 -d /var/build -m -g wheel builder && chmod 755 /var/build && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+FROM base AS build
 
 # Install paru to enable AUR repository usage
-RUN sudo -H -u builder sh -c "cd && rm -rf paru && git clone https://aur.archlinux.org/paru.git paru && cd paru && makepkg -si --noconfirm && cd && rm -rf .cache paru"
+RUN sudo -u builder -H sh -c "cd && rm -rf paru-git && git clone https://aur.archlinux.org/paru.git paru-git && cd paru-git && makepkg -s --noconfirm && ls -l"
+
+FROM base
+RUN --mount=type=bind,target=/var/build/paru-git,from=build,source=/var/build/paru-git \
+    pacman -U --noconfirm /var/build/paru-git/paru-2.1.0-2-x86_64.pkg.tar.zst

@@ -1,0 +1,7 @@
+#!/usr/bin/env -S bash -euo pipefail
+
+# Ensure host-spawn installed
+distrobox-host-exec true
+
+# Since environment variables exposed to the host side must be explicitly specified, execute host-spawn directly instead of distrobox-host-exec
+exec host-spawn --env DISPLAY,SWAYSOCK,I3SOCK,SCROLLSOCK,WAYLAND_DISPLAY,XCURSOR_SIZE,XCURSOR_THEME uwsm "$@"
