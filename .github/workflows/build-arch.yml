@@ -2,6 +2,11 @@ name: Build arch images on base image change
 
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force build'
+        required: false
+        default: 'false'
   schedule:
     - cron: "17 * * * *"
 
@@ -11,12 +16,13 @@ permissions:
 
 env:
   BASE_IMAGE: quay.io/toolbx/arch-toolbox:latest
+  FORCE: ${{ github.event.inputs.force == 'true' }}
 
 jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.diff.outputs.changed }}
+      changed: ${{ steps.diff.outputs.changed || env.FORCE }}
     steps:
       - uses: actions/checkout@v4
 
