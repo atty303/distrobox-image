@@ -33,7 +33,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ci/base-digest
-          key: base-digest-${{ env.BASE_IMAGE }}
+          key: base-digest-${{ env.BASE_IMAGE }}-${{ github.run_id }}
           restore-keys: |
             base-digest-
 
