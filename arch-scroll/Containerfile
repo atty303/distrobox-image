@@ -1,5 +1,3 @@
 FROM ghcr.io/atty303/arch-toolbox-paru
 
 RUN sudo -H -u builder paru -Sy --noconfirm sway-scroll
-
-COPY uwsm /usr/local/bin
