@@ -69,6 +69,10 @@ the parent and descendants. Common build changes and unknown paths require all i
 `mise run check:all` for ordered static checks, full image/Distrobox integration, and act static-job
 validation.
 
+Image smoke tests are limited to verifying declared packages, public entrypoints, and
+repository-owned integration assets. Do not assert distribution-package internals or detailed
+application behavior unless this repository explicitly declares that compatibility contract.
+
 ## Distrobox isolation
 
 Reference INIs are image-local repository snapshots, not links to dotfiles. The manifest declares
