@@ -4,10 +4,11 @@ import { loadLock } from "../lock.ts";
 
 Deno.test("repository manifests and locks validate", async () => {
   const manifests = await discoverManifests();
-  assertEquals(manifests.length, 3);
+  assertEquals(manifests.length, 4);
   assertEquals(manifests.map((manifest) => manifest.name), [
     "arch-toolbox-paru",
     "arch-dms",
+    "arch-noctalia",
     "arch-scroll",
   ]);
   for (const manifest of manifests) {

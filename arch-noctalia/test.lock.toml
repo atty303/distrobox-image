@@ -1,0 +1,19 @@
+schema = 2
+image = "arch-noctalia"
+
+[inputs]
+parent = "ghcr.io/atty303/arch-toolbox-paru@sha256:79f44a5c54a061cc952432029f44f14b10923fb6645a5028f10c62dc9a60594c"
+arch_snapshot = "2026/08/07"
+aur_version = "5.0.0_beta.7"
+aur_commit = "97917d9ca07e3779a64bd001e664a70bc7e0a78f"
+aur_source_commit = "97917d9ca07e3779a64bd001e664a70bc7e0a78f"
+
+[build_args]
+BASE_IMAGE = "ghcr.io/atty303/arch-toolbox-paru@sha256:79f44a5c54a061cc952432029f44f14b10923fb6645a5028f10c62dc9a60594c"
+ARCH_SNAPSHOT = "2026/08/07"
+NOCTALIA_VERSION = "5.0.0_beta.7"
+AUR_COMMIT = "97917d9ca07e3779a64bd001e664a70bc7e0a78f"
+
+[expected]
+"io.atty303.distrobox.noctalia-version" = "5.0.0_beta.7"
+"io.atty303.distrobox.aur-commit" = "97917d9ca07e3779a64bd001e664a70bc7e0a78f"

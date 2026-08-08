@@ -10,6 +10,6 @@ Deno.test("image-local Distrobox changes select the image and descendants", asyn
   );
   assertEquals(
     affectedImages(manifests, ["arch-toolbox-paru/distrobox.ini"]).map((item) => item.name),
-    ["arch-toolbox-paru", "arch-dms", "arch-scroll"],
+    ["arch-toolbox-paru", "arch-dms", "arch-noctalia", "arch-scroll"],
   );
 });

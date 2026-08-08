@@ -1,0 +1,47 @@
+schema = 2
+name = "arch-noctalia"
+repository = "ghcr.io/atty303/arch-noctalia"
+context = "."
+containerfile = "Containerfile"
+tag = "noctalia-{aur.version}-{event_hash8}"
+
+[parent]
+image = "arch-toolbox-paru"
+propagation = "on-next-build"
+
+[[triggers]]
+id = "aur"
+type = "aur-version"
+role = "input"
+package = "noctalia"
+build_arg = "NOCTALIA_VERSION"
+label = "io.atty303.distrobox.noctalia-version"
+
+[[triggers]]
+id = "aur-source"
+type = "git-commit"
+role = "build"
+repository = "https://aur.archlinux.org/noctalia.git"
+ref = "HEAD"
+build_arg = "AUR_COMMIT"
+label = "io.atty303.distrobox.aur-commit"
+
+[reference]
+section = "noctalia"
+nvidia_section = "noctalia-nvidia"
+
+[[smoke]]
+command = ["/usr/bin/noctalia", "--version"]
+[[smoke]]
+command = ["sh", "-c", "installed=$(pacman -Q noctalia | awk '{print $2}') && test \"${installed%-*}\" = \"$LOCK_AUR_VERSION\""]
+[[smoke]]
+command = ["test", "-f", "/usr/share/noctalia/assets/templates/scroll/scroll"]
+[[smoke]]
+command = ["test", "-f", "/usr/lib/spa-0.2/support/libspa-support.so"]
+[[smoke]]
+command = ["sh", "-c", "! ldd /usr/bin/noctalia | grep -F 'not found'"]
+
+[[reference_smoke]]
+command = ["sh", "-c", "test \"$(readlink /usr/local/bin/uwsm)\" = /usr/bin/host-exec"]
+[[reference_smoke]]
+command = ["sh", "-c", "test \"$(readlink /usr/local/bin/ghostty)\" = /usr/bin/host-exec"]

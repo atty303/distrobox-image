@@ -1,0 +1,23 @@
+ARG BASE_IMAGE=ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4
+FROM ${BASE_IMAGE}
+ARG ARCH_SNAPSHOT
+ARG NOCTALIA_VERSION
+ARG AUR_COMMIT
+RUN test -n "${ARCH_SNAPSHOT}" && test -n "${NOCTALIA_VERSION}" && test -n "${AUR_COMMIT}" && \
+    printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
+    for attempt in 1 2 3; do \
+      if pacman -Sy --needed --noconfirm pipewire; then break; fi; \
+      test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
+    done && \
+    for attempt in 1 2 3; do \
+      if sudo -H -u builder git clone https://aur.archlinux.org/noctalia.git /var/build/noctalia; then break; fi; \
+      rm -rf /var/build/noctalia; test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
+    done && \
+    sudo -H -u builder git -C /var/build/noctalia checkout --detach "${AUR_COMMIT}" && \
+    sudo -H -u builder bash -lc 'cd /var/build/noctalia && makepkg -si --noconfirm --needed' && \
+    installed="$(pacman -Q noctalia | awk '{print $2}')" && test "${installed%-*}" = "${NOCTALIA_VERSION}" && \
+    rm -rf /var/build/noctalia
+LABEL io.atty303.distrobox.noctalia-version="${NOCTALIA_VERSION}" \
+      io.atty303.distrobox.aur-commit="${AUR_COMMIT}" \
+      io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
+ENTRYPOINT []

@@ -11,6 +11,7 @@ pinned in your own configuration.
 | `arch-toolbox-paru` | Common toolbox, `paru`, `host-spawn`, `host-exec` | Monthly base rollup, paru release, host-spawn release, or build-source change |
 | `arch-scroll`       | Scroll and its companion binaries                 | A Scroll release is also available from the matching AUR package              |
 | `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop  | DMS or dsearch releases                                                       |
+| `arch-noctalia`     | Noctalia desktop shell and PipeWire runtime       | The Noctalia AUR package source changes                                       |
 
 Parent updates alone do not republish child images. A child takes the newest published parent on its
 next own build.
@@ -29,6 +30,21 @@ distrobox assemble create --file ~/.config/distrobox/scroll.ini
 ```
 
 Adjust UID-specific paths, volumes, and the NVIDIA entry for your host.
+
+Noctalia runs application desktop entries inside its container by default. Route those commands
+through `host-exec` by adding this to `~/.config/noctalia/config.toml`:
+
+```toml
+[shell]
+launch_apps_as_systemd_services = false
+launch_apps_custom_command = "host-exec $CMD"
+
+[lockscreen]
+enabled = false
+```
+
+Use the host compositor's screen locker. A rootless Distrobox does not authenticate against the
+host's PAM password database.
 
 ## Update or roll back
 
