@@ -39,6 +39,8 @@ command = ["test", "-f", "/usr/share/noctalia/assets/templates/scroll/scroll"]
 [[smoke]]
 command = ["test", "-f", "/usr/lib/spa-0.2/support/libspa-support.so"]
 [[smoke]]
+command = ["pacman", "-Q", "pipewire", "wireplumber"]
+[[smoke]]
 command = ["sh", "-c", "! ldd /usr/bin/noctalia | grep -F 'not found'"]
 
 [[reference_smoke]]

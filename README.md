@@ -11,7 +11,7 @@ pinned in your own configuration.
 | `arch-toolbox-paru` | Common toolbox, `paru`, `host-spawn`, `host-exec` | Monthly base rollup, paru release, host-spawn release, or build-source change |
 | `arch-scroll`       | Scroll and its companion binaries                 | A Scroll release is also available from the matching AUR package              |
 | `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop  | DMS or dsearch releases                                                       |
-| `arch-noctalia`     | Noctalia desktop shell and PipeWire runtime       | The Noctalia AUR package source changes                                       |
+| `arch-noctalia`     | Noctalia shell and PipeWire/WirePlumber runtime   | The Noctalia AUR package source changes                                       |
 
 Parent updates alone do not republish child images. A child takes the newest published parent on its
 next own build.

@@ -6,7 +6,7 @@ ARG AUR_COMMIT
 RUN test -n "${ARCH_SNAPSHOT}" && test -n "${NOCTALIA_VERSION}" && test -n "${AUR_COMMIT}" && \
     printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
     for attempt in 1 2 3; do \
-      if pacman -Sy --needed --noconfirm pipewire; then break; fi; \
+      if pacman -Sy --needed --noconfirm pipewire wireplumber; then break; fi; \
       test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
     done && \
     for attempt in 1 2 3; do \
