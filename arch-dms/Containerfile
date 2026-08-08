@@ -14,7 +14,10 @@ ARG QUICKSHELL_AUR_COMMIT
 ARG QUICKSHELL_COMMIT
 RUN test -n "${ARCH_SNAPSHOT}" && test -n "${DMS_VERSION}" && test -n "${QUICKSHELL_AUR_COMMIT}" && test -n "${QUICKSHELL_COMMIT}" && \
     printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
-    pacman -Sy --noconfirm --needed vulkan-headers cups-pk-helper kimageformats matugen cava pipewire-jack khal fprintd sway accountsservice && \
+    for attempt in 1 2 3; do \
+      if pacman -Sy --noconfirm --needed vulkan-headers cups-pk-helper kimageformats matugen cava pipewire-jack khal fprintd sway accountsservice; then break; fi; \
+      test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
+    done && \
     for attempt in 1 2 3; do \
       if sudo -H -u builder git clone https://aur.archlinux.org/quickshell-git.git /var/build/quickshell-git; then break; fi; \
       rm -rf /var/build/quickshell-git; test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \

@@ -10,7 +10,10 @@ ARG HOST_SPAWN_SHA256
 
 RUN test -n "${ARCH_SNAPSHOT}" && \
     printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
-    pacman -Syu --needed --noconfirm sudo curl ca-certificates git rust && \
+    for attempt in 1 2 3; do \
+      if pacman -Syu --needed --noconfirm sudo curl ca-certificates git rust; then break; fi; \
+      test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
+    done && \
     useradd -u 2000 -d /var/build -m -g wheel builder && chmod 755 /var/build && \
     printf 'builder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers && \
     for attempt in 1 2 3; do \
