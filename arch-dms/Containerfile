@@ -1,4 +1,33 @@
-FROM ghcr.io/atty303/arch-toolbox-paru
-
-RUN sudo -H -u builder paru -Sy --noconfirm vulkan-headers quickshell-git cups-pk-helper kimageformats matugen cava pipewire-jack khal fprintd sway
-RUN sudo -H -u builder paru -Sy --noconfirm dms-shell-bin dsearch-bin
+ARG BASE_IMAGE=ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4
+FROM ${BASE_IMAGE}
+ARG ARCH_SNAPSHOT
+ARG DMS_VERSION
+ARG DMS_URL
+ARG DMS_SHA256
+ARG DSEARCH_VERSION
+ARG DSEARCH_URL
+ARG DSEARCH_SHA256
+ARG DGOP_VERSION
+ARG DGOP_URL
+ARG DGOP_SHA256
+ARG QUICKSHELL_AUR_COMMIT
+ARG QUICKSHELL_COMMIT
+RUN test -n "${ARCH_SNAPSHOT}" && test -n "${QUICKSHELL_AUR_COMMIT}" && test -n "${QUICKSHELL_COMMIT}" && \
+    printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
+    pacman -Sy --noconfirm --needed vulkan-headers cups-pk-helper kimageformats matugen cava pipewire-jack khal fprintd sway accountsservice && \
+    sudo -H -u builder git clone https://aur.archlinux.org/quickshell-git.git /var/build/quickshell-git && \
+    sudo -H -u builder git -C /var/build/quickshell-git checkout --detach "${QUICKSHELL_AUR_COMMIT}" && \
+    sed -i "s|git+https://git.outfoxxed.me/quickshell/quickshell|git+https://git.outfoxxed.me/quickshell/quickshell#commit=${QUICKSHELL_COMMIT}|" /var/build/quickshell-git/PKGBUILD && \
+    sudo -H -u builder bash -lc 'cd /var/build/quickshell-git && makepkg -si --noconfirm --needed' && \
+    for item in "dms:${DMS_URL}:${DMS_SHA256}" "dsearch:${DSEARCH_URL}:${DSEARCH_SHA256}" "dgop:${DGOP_URL}:${DGOP_SHA256}"; do \
+      name="${item%%:*}"; rest="${item#*:}"; url="${rest%:*}"; checksum="${item##*:}"; \
+      curl --fail --location --output "/tmp/${name}.gz" "${url}" && \
+      echo "${checksum}  /tmp/${name}.gz" | sha256sum --check --strict && \
+      gzip --decompress --stdout "/tmp/${name}.gz" > "/usr/bin/${name}" && chmod 0755 "/usr/bin/${name}"; \
+    done && rm -rf /var/build/quickshell-git /tmp/*.gz
+LABEL io.atty303.distrobox.dms-version="${DMS_VERSION}" \
+      io.atty303.distrobox.dsearch-version="${DSEARCH_VERSION}" \
+      io.atty303.distrobox.dgop-version="${DGOP_VERSION}" \
+      io.atty303.distrobox.quickshell-commit="${QUICKSHELL_COMMIT}" \
+      io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
+ENTRYPOINT []

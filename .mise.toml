@@ -1,6 +1,55 @@
+[tools]
+deno = "2.9.3"
+actionlint = "1.7.7"
+act = "0.2.82"
+
+[env]
+DENO_FROZEN = "true"
+
+[tasks."fmt:check"]
+run = "deno fmt --check"
+
+[tasks.lint]
+run = "deno lint"
+
+[tasks.typecheck]
+run = "deno check ci/main.ts"
+
+[tasks.validate]
+run = "deno run --allow-read=. ci/main.ts validate"
+
+[tasks."test:unit"]
+run = "deno test --allow-read=.,/tmp --allow-write=/tmp ci/tests"
+
+[tasks."test:plan"]
+run = "deno test --allow-read=. ci/tests/planner_test.ts"
+
+[tasks."lint:actions"]
+run = "actionlint"
+
+[tasks."test:actions"]
+run = "act pull_request -W .github/workflows/check.yml --input local=true -P ubuntu-latest=catthehacker/ubuntu:act-latest"
+
+[tasks."test:images"]
+run = "deno run --allow-read=. --allow-write=/tmp --allow-run=podman --allow-env ci/main.ts test-images"
+
+[tasks."test:distrobox"]
+run = "deno run --allow-read=. --allow-write=/tmp --allow-run=podman,distrobox,mktemp,rm --allow-env ci/main.ts test-distrobox"
+
+[tasks.plan]
+run = "deno run --allow-read=. --allow-write=/tmp --allow-net=api.github.com,aur.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git ci/main.ts plan"
+
 [tasks.build]
-run = [
-    "podman build -t ghcr.io/atty303/arch-toolbox-paru:latest arch-toolbox-paru",
-    "podman build -t ghcr.io/atty303/arch-dms:latest arch-dms",
-    "podman build -t ghcr.io/atty303/arch-scroll:latest arch-scroll",
-]
+run = "deno run --allow-read=. --allow-write=/tmp --allow-run=podman,git --allow-env ci/main.ts build"
+
+[tasks."refresh-fixture"]
+run = "deno run --allow-read=. --allow-write=ci/fixtures --allow-net ci/main.ts refresh-fixture"
+
+[tasks."refresh-lock"]
+run = "deno run --allow-read=. --allow-write=. --allow-net --allow-run=skopeo,git ci/main.ts refresh-lock"
+
+[tasks.check]
+depends = ["fmt:check", "lint", "typecheck", "validate", "test:unit", "test:plan", "lint:actions"]
+
+[tasks."check:all"]
+depends = ["check", "test:images", "test:distrobox", "test:actions"]

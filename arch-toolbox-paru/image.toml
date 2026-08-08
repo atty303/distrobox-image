@@ -1,0 +1,56 @@
+schema = 1
+name = "arch-toolbox-paru"
+repository = "ghcr.io/atty303/arch-toolbox-paru"
+context = "."
+containerfile = "Containerfile"
+tag = "arch-{year}-{month}-{event_hash8}"
+lock_fields = ["parent", "arch_snapshot", "paru_version", "paru_source_version", "host_spawn_version", "host_spawn_url", "host_spawn_sha256"]
+
+[parent]
+external = "quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985"
+propagation = "on-next-build"
+
+[[triggers]]
+id = "base"
+type = "oci-digest"
+role = "build"
+image = "quay.io/toolbx/arch-toolbox:latest"
+monthly = true
+
+[[triggers]]
+id = "paru"
+type = "github-release"
+role = "build"
+repository = "Morganamilo/paru"
+channel = "stable"
+build_arg = "PARU_VERSION"
+
+[[triggers]]
+id = "paru-source"
+type = "git-commit"
+role = "input"
+repository = "https://github.com/Morganamilo/paru.git"
+ref = "HEAD"
+build_arg = "PARU_COMMIT"
+
+[[triggers]]
+id = "host-spawn"
+type = "github-release"
+role = "build"
+repository = "1player/host-spawn"
+channel = "stable"
+build_arg = "HOST_SPAWN_VERSION"
+asset_pattern = "host-spawn-x86_64"
+url_arg = "HOST_SPAWN_URL"
+checksum_arg = "HOST_SPAWN_SHA256"
+
+[[triggers]]
+id = "source"
+type = "repo-path"
+role = "input"
+paths = ["arch-toolbox-paru"]
+
+[[smoke]]
+command = ["paru", "--version"]
+[[smoke]]
+command = ["host-spawn", "--version"]

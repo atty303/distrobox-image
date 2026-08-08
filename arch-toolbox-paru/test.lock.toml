@@ -1,0 +1,21 @@
+schema = 1
+image = "arch-toolbox-paru"
+[inputs]
+parent = "quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985"
+arch_snapshot = "2026/08/01"
+paru_version = "2.1.0"
+paru_source_version = "9ac3578807a87858651e81a02586ceb947686e7c"
+host_spawn_version = "1.6.2"
+host_spawn_url = "https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64"
+host_spawn_sha256 = "077bc09a087292447ba17cfe2156a93f71bf56c4c6be8e38d3abe65c1240f34c"
+[build_args]
+BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985"
+ARCH_SNAPSHOT = "2026/08/01"
+PARU_VERSION = "2.1.0"
+PARU_COMMIT = "9ac3578807a87858651e81a02586ceb947686e7c"
+HOST_SPAWN_VERSION = "1.6.2"
+HOST_SPAWN_URL = "https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64"
+HOST_SPAWN_SHA256 = "077bc09a087292447ba17cfe2156a93f71bf56c4c6be8e38d3abe65c1240f34c"
+[expected]
+paru_version = "2.1.0"
+host_spawn_version = "1.6.2"

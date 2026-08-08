@@ -1,0 +1,71 @@
+schema = 1
+name = "arch-dms"
+repository = "ghcr.io/atty303/arch-dms"
+context = "."
+containerfile = "Containerfile"
+tag = "dms-{dms.version}-dsearch-{dsearch.version}-{event_hash8}"
+lock_fields = ["parent", "dms_version", "dms_url", "dms_sha256", "dsearch_version", "dsearch_url", "dsearch_sha256", "dgop_version", "dgop_url", "dgop_sha256", "quickshell_aur_version", "quickshell_version", "arch_snapshot"]
+[parent]
+image = "arch-toolbox-paru"
+propagation = "on-next-build"
+[[triggers]]
+id = "dms"
+type = "github-release"
+role = "build"
+repository = "AvengeMedia/DankMaterialShell"
+channel = "stable"
+build_arg = "DMS_VERSION"
+asset_pattern = "dms-cli-amd64.gz"
+url_arg = "DMS_URL"
+checksum_arg = "DMS_SHA256"
+[[triggers]]
+id = "dsearch"
+type = "github-release"
+role = "build"
+repository = "AvengeMedia/danksearch"
+channel = "stable"
+build_arg = "DSEARCH_VERSION"
+asset_pattern = "dsearch-linux-amd64.gz"
+url_arg = "DSEARCH_URL"
+checksum_arg = "DSEARCH_SHA256"
+[[triggers]]
+id = "dgop"
+type = "github-release"
+role = "input"
+repository = "AvengeMedia/dgop"
+channel = "stable"
+build_arg = "DGOP_VERSION"
+asset_pattern = "dgop-linux-amd64.gz"
+url_arg = "DGOP_URL"
+checksum_arg = "DGOP_SHA256"
+[[triggers]]
+id = "quickshell-aur"
+type = "git-commit"
+role = "input"
+repository = "https://aur.archlinux.org/quickshell-git.git"
+build_arg = "QUICKSHELL_AUR_COMMIT"
+[[triggers]]
+id = "quickshell"
+type = "git-commit"
+role = "input"
+repository = "https://git.outfoxxed.me/quickshell/quickshell.git"
+build_arg = "QUICKSHELL_COMMIT"
+[[triggers]]
+id = "source"
+type = "repo-path"
+role = "input"
+paths = ["arch-dms"]
+[reference]
+file = "reference/distrobox/dms.ini"
+section = "dms"
+nvidia_section = "dms-nvidia"
+[[smoke]]
+command = ["test", "-x", "/usr/bin/dms"]
+[[smoke]]
+command = ["test", "-x", "/usr/bin/dgop"]
+[[smoke]]
+command = ["test", "-x", "/usr/bin/dsearch"]
+[[smoke]]
+command = ["sh", "-c", "test \"$(readlink /usr/local/bin/uwsm)\" = /usr/bin/host-exec"]
+[[smoke]]
+command = ["sh", "-c", "test \"$(readlink /usr/local/bin/ghostty)\" = /usr/bin/host-exec"]

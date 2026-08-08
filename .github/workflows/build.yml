@@ -1,0 +1,125 @@
+name: Build immutable images
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "arch-*/**"
+      - "ci/**"
+      - "reference/distrobox/**"
+      - "deno.json"
+      - "deno.lock"
+      - ".mise.toml"
+      - "mise.lock"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Image name or all
+        type: string
+        default: all
+      force:
+        description: Create a nonce-backed force event
+        type: boolean
+        default: false
+      reason:
+        description: Reason for the force build
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      build-matrix: ${{ steps.output.outputs.build-matrix }}
+      verify-matrix: ${{ steps.output.outputs.verify-matrix }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          install: true
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install --yes skopeo
+      - name: Resolve live inputs and create plan
+        env:
+          IMAGE: ${{ inputs.image || 'all' }}
+          FORCE: ${{ inputs.force || 'false' }}
+          FORCE_NONCE: ${{ github.run_id }}-${{ github.run_attempt }}
+          PLAN_OUTPUT: plan.json
+        run: mise run plan -- "$IMAGE" ${{ inputs.force && '--force' || '' }}
+      - id: output
+        run: |
+          echo "build-matrix=$(jq -c '[.[] | select(.action == "build")]' plan.json)" >> "$GITHUB_OUTPUT"
+          echo "verify-matrix=$(jq -c '[.[] | select(.action == "build" or .action == "verify")]' plan.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: resolved-plan
+          path: plan.json
+          if-no-files-found: error
+
+  publish:
+    needs: plan
+    if: needs.plan.outputs.build-matrix != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        item: ${{ fromJSON(needs.plan.outputs.build-matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          install: true
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install --yes podman skopeo
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Refuse to overwrite an immutable tag
+        env:
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}
+          IMAGE_TAG: ${{ matrix.item.tag }}
+        run: '! skopeo inspect "docker://${IMAGE_REPOSITORY}:${IMAGE_TAG}" >/dev/null 2>&1'
+      - name: Write production lock
+        env:
+          LOCK_JSON: ${{ toJSON(matrix.item.lock) }}
+        run: printf '%s' "$LOCK_JSON" > production.lock.json
+      - name: Build and publish immutable tag
+        env:
+          LOCK_FILE: production.lock.json
+        run: mise run build -- "${{ matrix.item.image }}" "${{ matrix.item.tag }}" --push
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-lock-${{ matrix.item.image }}-${{ matrix.item.tag }}
+          path: production.lock.json
+
+  verify:
+    needs: [plan, publish]
+    if: always() && needs.plan.outputs.verify-matrix != '[]' && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        item: ${{ fromJSON(needs.plan.outputs.verify-matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          install: true
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install --yes podman distrobox
+      - name: Fresh pull from public GHCR
+        run: podman pull "ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}:${{ matrix.item.tag }}"
+      - name: Reference Distrobox smoke
+        run: mise run test:distrobox -- "${{ matrix.item.image }}" "ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}:${{ matrix.item.tag }}"
+      - name: Report verified immutable tag
+        run: |
+          echo "### Available: \`ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}:${{ matrix.item.tag }}\`" >> "$GITHUB_STEP_SUMMARY"

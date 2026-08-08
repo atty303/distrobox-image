@@ -1,3 +1,18 @@
-FROM ghcr.io/atty303/arch-toolbox-paru
-
-RUN sudo -H -u builder paru -Sy --noconfirm sway-scroll
+ARG BASE_IMAGE=ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4
+FROM ${BASE_IMAGE}
+ARG ARCH_SNAPSHOT
+ARG SCROLL_VERSION
+ARG SCROLL_COMMIT
+ARG AUR_COMMIT
+RUN test -n "${ARCH_SNAPSHOT}" && test -n "${AUR_COMMIT}" && test -n "${SCROLL_COMMIT}" && \
+    printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
+    sudo -H -u builder git clone https://aur.archlinux.org/sway-scroll.git /var/build/sway-scroll && \
+    sudo -H -u builder git -C /var/build/sway-scroll checkout --detach "${AUR_COMMIT}" && \
+    sed -i "s|git+https://github.com/dawsers/scroll.git|git+https://github.com/dawsers/scroll.git#commit=${SCROLL_COMMIT}|" /var/build/sway-scroll/PKGBUILD && \
+    sudo -H -u builder bash -lc 'cd /var/build/sway-scroll && makepkg -si --noconfirm --needed' && \
+    rm -rf /var/build/sway-scroll
+LABEL io.atty303.distrobox.scroll-version="${SCROLL_VERSION}" \
+      io.atty303.distrobox.scroll-commit="${SCROLL_COMMIT}" \
+      io.atty303.distrobox.aur-commit="${AUR_COMMIT}" \
+      io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
+ENTRYPOINT []

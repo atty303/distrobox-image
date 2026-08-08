@@ -1,18 +1,33 @@
-FROM quay.io/toolbx/arch-toolbox:latest AS base
+ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985
+FROM ${BASE_IMAGE}
 
-# makepkg/paru cannot be executed as root, so add a regular user for building
-RUN useradd -u 2000 -d /var/build -m -g wheel builder && chmod 755 /var/build && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+ARG ARCH_SNAPSHOT
+ARG PARU_VERSION
+ARG PARU_COMMIT
+ARG HOST_SPAWN_VERSION
+ARG HOST_SPAWN_URL
+ARG HOST_SPAWN_SHA256
 
-FROM base AS build
-
-# Install paru to enable AUR repository usage
-RUN pacman -Syu --needed --noconfirm rust && sudo -u builder -H sh -c "cd && rm -rf paru-git && git clone https://aur.archlinux.org/paru.git paru-git && cd paru-git && makepkg -s --noconfirm && ls -l"
-
-FROM base
-RUN --mount=type=bind,target=/var/build/paru-git,from=build,source=/var/build/paru-git \
-    pacman -U --noconfirm /var/build/paru-git/paru-2.1.0-2-x86_64.pkg.tar.zst
-
-RUN curl -L -o /usr/bin/host-spawn https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64 && \
-    chmod +x /usr/bin/host-spawn
+RUN test -n "${ARCH_SNAPSHOT}" && \
+    printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
+    pacman -Syu --needed --noconfirm sudo curl ca-certificates git rust && \
+    useradd -u 2000 -d /var/build -m -g wheel builder && chmod 755 /var/build && \
+    printf 'builder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers && \
+    sudo -H -u builder git clone https://github.com/Morganamilo/paru.git /var/build/paru && \
+    sudo -H -u builder git -C /var/build/paru checkout --detach "${PARU_COMMIT}" && \
+    sudo -H -u builder bash -lc 'cd /var/build/paru && cargo build --locked --release' && \
+    install -Dm0755 /var/build/paru/target/release/paru /usr/bin/paru && \
+    install -Dm0644 /var/build/paru/paru.conf /etc/paru.conf && \
+    install -Dm0644 /var/build/paru/man/paru.8 /usr/share/man/man8/paru.8 && \
+    install -Dm0644 /var/build/paru/man/paru.conf.5 /usr/share/man/man5/paru.conf.5 && \
+    curl --fail --location --output /usr/bin/host-spawn "${HOST_SPAWN_URL}" && \
+    echo "${HOST_SPAWN_SHA256}  /usr/bin/host-spawn" | sha256sum --check --strict && \
+    chmod 0755 /usr/bin/host-spawn && rm -rf /var/build/paru
 
 COPY host-exec.sh /usr/bin/host-exec
+RUN chmod 0755 /usr/bin/host-exec
+LABEL io.atty303.distrobox.paru-version="${PARU_VERSION}" \
+      io.atty303.distrobox.paru-commit="${PARU_COMMIT}" \
+      io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \
+      io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
+ENTRYPOINT []

@@ -1,0 +1,46 @@
+schema = 1
+name = "arch-scroll"
+repository = "ghcr.io/atty303/arch-scroll"
+context = "."
+containerfile = "Containerfile"
+tag = "scroll-{scroll.version}-{event_hash8}"
+lock_fields = ["parent", "scroll_version", "scroll_commit", "aur_commit", "arch_snapshot"]
+[parent]
+image = "arch-toolbox-paru"
+propagation = "on-next-build"
+[[triggers]]
+id = "scroll"
+type = "github-release"
+role = "build"
+repository = "dawsers/scroll"
+channel = "stable"
+build_arg = "SCROLL_VERSION"
+revision_arg = "SCROLL_COMMIT"
+[[triggers]]
+id = "aur"
+type = "aur-version"
+role = "gate"
+package = "sway-scroll"
+matches = "scroll"
+revision_arg = "AUR_COMMIT"
+[[triggers]]
+id = "source"
+type = "repo-path"
+role = "input"
+paths = ["arch-scroll"]
+[reference]
+file = "reference/distrobox/scroll.ini"
+section = "scroll"
+nvidia_section = "scroll-nvidia"
+[[smoke]]
+command = ["/usr/bin/scroll", "--version"]
+[[smoke]]
+command = ["test", "-x", "/usr/bin/scrollmsg"]
+[[smoke]]
+command = ["test", "-x", "/usr/bin/scrollnag"]
+[[smoke]]
+command = ["test", "-x", "/usr/bin/scrollbar"]
+[[smoke]]
+command = ["sh", "-c", "test \"$(readlink /usr/local/bin/uwsm)\" = /usr/bin/host-exec"]
+[[smoke]]
+command = ["sh", "-c", "test \"$(readlink /usr/local/bin/vicinae)\" = /usr/bin/host-exec"]
