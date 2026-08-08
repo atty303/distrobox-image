@@ -1,4 +1,4 @@
-import type { ImageManifest } from "./types.ts";
+import type { ImageLock, ImageManifest } from "./types.ts";
 
 export interface MaterializeOptions {
   name: string;
@@ -49,7 +49,11 @@ async function run(command: string, args: string[], env?: Record<string, string>
   }).output();
   if (!result.success) throw new Error(`${command} ${args.join(" ")} failed`);
 }
-export async function smokeDistrobox(manifest: ImageManifest, image: string): Promise<void> {
+export async function smokeDistrobox(
+  manifest: ImageManifest,
+  lock: ImageLock,
+  image: string,
+): Promise<void> {
   if (!manifest.reference) return;
   const temp = await Deno.makeTempDir({ prefix: "distrobox-image-" });
   const name = `ci-${manifest.name}-${crypto.randomUUID().slice(0, 8)}`;
@@ -70,19 +74,58 @@ export async function smokeDistrobox(manifest: ImageManifest, image: string): Pr
   }
   await Deno.writeTextFile(ini, transformed);
   const env = { HOME: home };
-  try {
-    await run("distrobox", ["assemble", "create", "--file", ini, "--dry-run"], env);
-    await run("distrobox", ["assemble", "create", "--file", ini, "--name", name], env);
-    for (const smoke of manifest.smoke) {
-      await run("distrobox", ["enter", name, "--", ...smoke.command], env);
-    }
-  } finally {
-    await new Deno.Command("distrobox", {
+  const cleanup = async () => {
+    const result = await new Deno.Command("distrobox", {
       args: ["rm", "--force", name],
       env,
       stdout: "null",
       stderr: "null",
     }).output();
+    return result.success;
+  };
+  const onSignal = async () => {
+    await cleanup();
+    try {
+      await Deno.remove(temp, { recursive: true });
+    } finally {
+      Deno.exit(130);
+    }
+  };
+  Deno.addSignalListener("SIGINT", onSignal);
+  Deno.addSignalListener("SIGTERM", onSignal);
+  let failure: unknown;
+  let cleanupSucceeded = true;
+  try {
+    await run("distrobox", ["assemble", "create", "--file", ini, "--dry-run"], env);
+    await run("distrobox", ["assemble", "create", "--file", ini, "--name", name], env);
+    const lockEnvironment = Object.entries(lock.inputs).map(([key, value]) =>
+      `LOCK_${key.toUpperCase().replaceAll("-", "_")}=${value}`
+    );
+    for (const smoke of [...manifest.smoke, ...manifest.reference_smoke]) {
+      await run(
+        "distrobox",
+        ["enter", name, "--", "env", ...lockEnvironment, ...smoke.command],
+        env,
+      );
+    }
+    const exported = transformed.split("\n").find((line) => line.startsWith("exported_bins="))
+      ?.slice("exported_bins=".length).replaceAll('"', "").trim().split(/\s+/) ?? [];
+    for (const binary of exported) {
+      const path = `${home}/.local/bin/${binary.split("/").pop()}`;
+      try {
+        await Deno.lstat(path);
+      } catch {
+        throw new Error(`${manifest.name}: exported binary is missing: ${path}`);
+      }
+    }
+  } catch (error) {
+    failure = error;
+  } finally {
+    cleanupSucceeded = await cleanup();
     await Deno.remove(temp, { recursive: true });
+    Deno.removeSignalListener("SIGINT", onSignal);
+    Deno.removeSignalListener("SIGTERM", onSignal);
   }
+  if (failure) throw failure;
+  if (!cleanupSucceeded) throw new Error(`${manifest.name}: Distrobox cleanup failed for ${name}`);
 }

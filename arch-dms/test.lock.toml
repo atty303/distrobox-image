@@ -1,25 +1,27 @@
-schema = 1
+schema = 2
 image = "arch-dms"
+
 [inputs]
 parent = "ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4"
+arch_snapshot = "2026/08/01"
 dms_version = "1.5.3"
-dms_url = "https://github.com/AvengeMedia/DankMaterialShell/releases/download/v1.5.3/dms-cli-amd64.gz"
-dms_sha256 = "832aaae14fe7ef48737f4dd41f3226ea83dddf32cef15e23bbab27eec0417cb9"
+dms_url = "https://github.com/AvengeMedia/DankMaterialShell/releases/download/v1.5.3/dms-full-amd64.tar.gz"
+dms_sha256 = "ed543447b98568a092845164ea9cc20538ed8efa421214fba2969ab1b90a3f53"
 dsearch_version = "0.3.2"
 dsearch_url = "https://github.com/AvengeMedia/danksearch/releases/download/v0.3.2/dsearch-linux-amd64.gz"
 dsearch_sha256 = "2c9e433f82948c77488543d25955a170835755a39d29ecc2240a8e4d74be63fd"
 dgop_version = "0.2.3"
 dgop_url = "https://github.com/AvengeMedia/dgop/releases/download/v0.2.3/dgop-linux-amd64.gz"
 dgop_sha256 = "8f2f1798184b28d0f4816cc4fd32c5d0bcb995bfeaa7789601346c763fdd19ed"
-quickshell_aur_version = "2494139bce7b7fc71372da00b68fb745a2c72d90"
-quickshell_version = "28771c7c74b42e20afca0b1b63980cb46515537c"
-arch_snapshot = "2026/08/01"
+quickshell_aur_commit = "2494139bce7b7fc71372da00b68fb745a2c72d90"
+quickshell_commit = "28771c7c74b42e20afca0b1b63980cb46515537c"
+
 [build_args]
 BASE_IMAGE = "ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4"
 ARCH_SNAPSHOT = "2026/08/01"
 DMS_VERSION = "1.5.3"
-DMS_URL = "https://github.com/AvengeMedia/DankMaterialShell/releases/download/v1.5.3/dms-cli-amd64.gz"
-DMS_SHA256 = "832aaae14fe7ef48737f4dd41f3226ea83dddf32cef15e23bbab27eec0417cb9"
+DMS_BUNDLE_URL = "https://github.com/AvengeMedia/DankMaterialShell/releases/download/v1.5.3/dms-full-amd64.tar.gz"
+DMS_BUNDLE_SHA256 = "ed543447b98568a092845164ea9cc20538ed8efa421214fba2969ab1b90a3f53"
 DSEARCH_VERSION = "0.3.2"
 DSEARCH_URL = "https://github.com/AvengeMedia/danksearch/releases/download/v0.3.2/dsearch-linux-amd64.gz"
 DSEARCH_SHA256 = "2c9e433f82948c77488543d25955a170835755a39d29ecc2240a8e4d74be63fd"
@@ -28,7 +30,9 @@ DGOP_URL = "https://github.com/AvengeMedia/dgop/releases/download/v0.2.3/dgop-li
 DGOP_SHA256 = "8f2f1798184b28d0f4816cc4fd32c5d0bcb995bfeaa7789601346c763fdd19ed"
 QUICKSHELL_AUR_COMMIT = "2494139bce7b7fc71372da00b68fb745a2c72d90"
 QUICKSHELL_COMMIT = "28771c7c74b42e20afca0b1b63980cb46515537c"
+
 [expected]
-dms_version = "1.5.3"
-dsearch_version = "0.3.2"
-dgop_version = "0.2.3"
+"io.atty303.distrobox.dms-version" = "1.5.3"
+"io.atty303.distrobox.dsearch-version" = "0.3.2"
+"io.atty303.distrobox.dgop-version" = "0.2.3"
+"io.atty303.distrobox.quickshell-commit" = "28771c7c74b42e20afca0b1b63980cb46515537c"

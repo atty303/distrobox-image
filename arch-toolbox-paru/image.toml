@@ -1,10 +1,9 @@
-schema = 1
+schema = 2
 name = "arch-toolbox-paru"
 repository = "ghcr.io/atty303/arch-toolbox-paru"
 context = "."
 containerfile = "Containerfile"
 tag = "arch-{year}-{month}-{event_hash8}"
-lock_fields = ["parent", "arch_snapshot", "paru_version", "paru_source_version", "host_spawn_version", "host_spawn_url", "host_spawn_sha256"]
 
 [parent]
 external = "quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985"
@@ -24,6 +23,7 @@ role = "build"
 repository = "Morganamilo/paru"
 channel = "stable"
 build_arg = "PARU_VERSION"
+label = "io.atty303.distrobox.paru-version"
 
 [[triggers]]
 id = "paru-source"
@@ -32,6 +32,7 @@ role = "input"
 repository = "https://github.com/Morganamilo/paru.git"
 ref = "HEAD"
 build_arg = "PARU_COMMIT"
+label = "io.atty303.distrobox.paru-commit"
 
 [[triggers]]
 id = "host-spawn"
@@ -43,14 +44,9 @@ build_arg = "HOST_SPAWN_VERSION"
 asset_pattern = "host-spawn-x86_64"
 url_arg = "HOST_SPAWN_URL"
 checksum_arg = "HOST_SPAWN_SHA256"
-
-[[triggers]]
-id = "source"
-type = "repo-path"
-role = "input"
-paths = ["arch-toolbox-paru"]
+label = "io.atty303.distrobox.host-spawn-version"
 
 [[smoke]]
-command = ["paru", "--version"]
+command = ["sh", "-c", "paru --version | grep -F \"$LOCK_PARU_VERSION\""]
 [[smoke]]
-command = ["host-spawn", "--version"]
+command = ["sh", "-c", "host-spawn --version | grep -F \"$LOCK_HOST_SPAWN_VERSION\""]

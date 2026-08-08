@@ -1,9 +1,9 @@
 # Reference Distrobox definitions
 
-These files are snapshots used by the local and post-publish smoke harness. They deliberately use
-the non-existent `reserved-not-published` tag. Replace only `image=` with an immutable tag reported
-as verified by the build workflow before using one directly.
+These definitions are test fixtures and starting points for consumer configuration. Copy one to your
+own configuration and replace only `image=` with a published immutable tag. The reserved tag in this
+directory is intentionally unusable.
 
-The harness rewrites section names, images, pull policy, host volume sources, `start_now`, and HOME
-line by line. It preserves repeated keys, container-side mount targets, hooks, flags, exported bins,
-and NVIDIA includes. It never reads the user's dotfiles at runtime.
+The smoke harness transforms a temporary copy line by line. It uses a unique container and HOME,
+replaces host volume sources with fixtures, disables pulls and `start_now`, and preserves hooks,
+flags, exports, container-side mount targets, and NVIDIA includes.

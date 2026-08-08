@@ -1,15 +1,15 @@
 import type { ImageLock, ImageManifest, PlanItem, RegistryState, ResolvedValue } from "./types.ts";
 
+const EVENT_SCHEMA = 2;
 export interface PlanOptions {
   now: Date;
   force?: boolean;
   nonce?: string;
-  previous?: Record<string, string>;
-  changedPaths?: string[];
+  manualReason?: string;
 }
 async function sha256(value: string): Promise<string> {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 function jstYearMonth(now: Date): { year: string; month: string; key: string } {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -29,18 +29,18 @@ export async function eventKey(
   nonce?: string,
 ): Promise<string> {
   const month = jstYearMonth(now).key;
-  const build = manifest.triggers.filter((t) => t.role === "build").map((
-    t,
-  ) => [t.id, t.monthly ? month : resolved[t.id]?.value]).sort(([a], [b]) => a!.localeCompare(b!));
-  return await sha256(
-    JSON.stringify({
-      schema: manifest.schema,
-      image: manifest.name,
-      build,
-      sourceHash,
-      nonce: nonce || undefined,
-    }),
-  );
+  const build = manifest.triggers.filter((trigger) => trigger.role === "build").map((trigger) => [
+    trigger.id,
+    trigger.type === "oci-digest" && trigger.monthly ? month : resolved[trigger.id]?.value,
+  ]).sort(([a], [b]) => a!.localeCompare(b!));
+  return await sha256(JSON.stringify({
+    eventSchema: EVENT_SCHEMA,
+    manifestSchema: manifest.schema,
+    image: manifest.name,
+    build,
+    sourceHash,
+    nonce: nonce || undefined,
+  }));
 }
 export function renderTag(
   template: string,
@@ -57,16 +57,26 @@ export function renderTag(
   for (const [id, result] of Object.entries(resolved)) {
     values[`${id}.version`] = result.value.replace(/^v/, "").replace(/[^A-Za-z0-9_.-]/g, "-");
   }
-  const tag = template.replace(/\{([^}]+)\}/g, (_, key) =>
-    values[key] ?? (() => {
-      throw new Error(`undefined tag variable ${key}`);
-    })());
+  const tag = template.replace(/\{([^}]+)\}/g, (_, key) => {
+    if (!(key in values)) throw new Error(`undefined tag variable ${key}`);
+    return values[key];
+  });
   if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/.test(tag)) throw new Error(`invalid OCI tag ${tag}`);
   return tag;
 }
+export function tagPattern(template: string): RegExp {
+  const escaped = template.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = escaped
+    .replace("\\{event_hash8\\}", "[0-9a-f]{8}")
+    .replace("\\{year\\}", "[0-9]{4}")
+    .replace("\\{month\\}", "(?:0[1-9]|1[0-2])")
+    .replace(/\\\{[^}]+\\\}/g, "[A-Za-z0-9_.-]+");
+  return new RegExp(`^${pattern}$`);
+}
 function gatesPass(manifest: ImageManifest, resolved: Record<string, ResolvedValue>): boolean {
-  return manifest.triggers.filter((t) => t.role === "gate" && t.matches).every((gate) =>
-    resolved[gate.id]?.value === resolved[gate.matches!]?.value
+  return manifest.triggers.filter((trigger) => trigger.role === "gate").every((trigger) =>
+    trigger.type === "aur-version" &&
+    resolved[trigger.id]?.value === resolved[trigger.matches!]?.value
   );
 }
 export async function planImage(
@@ -77,8 +87,12 @@ export async function planImage(
   registry: RegistryState,
   options: PlanOptions,
 ): Promise<PlanItem> {
+  const common = { image: manifest.name, repository: manifest.repository };
   if (!gatesPass(manifest, resolved)) {
-    return { image: manifest.name, action: "wait", reason: "gate trigger has not caught up" };
+    return { ...common, action: "wait", reason: "gate trigger has not caught up" };
+  }
+  if (options.force && !options.manualReason?.trim()) {
+    throw new Error("manual force requires a reason");
   }
   const key = await eventKey(
     manifest,
@@ -89,42 +103,21 @@ export async function planImage(
   );
   const tag = renderTag(manifest.tag, resolved, key, options.now);
   if (await registry.exists(manifest.repository, tag)) {
-    return await registry.verified(manifest.repository, tag)
-      ? {
-        image: manifest.name,
-        action: "skip",
-        reason: "immutable event tag is already verified",
-        eventKey: key,
-        tag,
-      }
-      : {
-        image: manifest.name,
-        action: "verify",
-        reason: "tag exists but verification is incomplete",
-        eventKey: key,
-        tag,
-      };
-  }
-  const buildValues = Object.fromEntries(
-    manifest.triggers.filter((t) => t.role === "build").map((t) => [t.id, resolved[t.id].value]),
-  );
-  const unchanged = !options.force && options.previous &&
-    Object.entries(buildValues).every(([k, v]) => options.previous![`${manifest.name}.${k}`] === v);
-  if (unchanged) {
     return {
-      image: manifest.name,
+      ...common,
       action: "skip",
-      reason: "build triggers are unchanged",
+      reason: "published immutable event tag already exists",
       eventKey: key,
       tag,
     };
   }
   return {
-    image: manifest.name,
+    ...common,
     action: "build",
     reason: options.force ? "manual force event" : "new build event",
     eventKey: key,
     tag,
     lock,
+    manualReason: options.force ? options.manualReason!.trim() : undefined,
   };
 }

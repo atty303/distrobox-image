@@ -1,16 +1,21 @@
-schema = 1
+schema = 2
 image = "arch-scroll"
+
 [inputs]
 parent = "ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4"
+arch_snapshot = "2026/08/01"
 scroll_version = "1.12.17"
 scroll_commit = "262b38c83e305cd646ac0b86daf38bd550cab64d"
+aur_version = "1.12.17"
 aur_commit = "116b639b66e7a35e9194d6b462ddaadf5407b84d"
-arch_snapshot = "2026/08/01"
+
 [build_args]
 BASE_IMAGE = "ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4"
+ARCH_SNAPSHOT = "2026/08/01"
 SCROLL_VERSION = "1.12.17"
 SCROLL_COMMIT = "262b38c83e305cd646ac0b86daf38bd550cab64d"
 AUR_COMMIT = "116b639b66e7a35e9194d6b462ddaadf5407b84d"
-ARCH_SNAPSHOT = "2026/08/01"
+
 [expected]
-scroll_version = "1.12.17"
+"io.atty303.distrobox.scroll-version" = "1.12.17"
+"io.atty303.distrobox.aur-commit" = "116b639b66e7a35e9194d6b462ddaadf5407b84d"

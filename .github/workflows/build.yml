@@ -8,7 +8,6 @@ on:
     paths:
       - "arch-*/**"
       - "ci/**"
-      - "reference/distrobox/**"
       - "deno.json"
       - "deno.lock"
       - ".mise.toml"
@@ -25,20 +24,20 @@ on:
         type: boolean
         default: false
       reason:
-        description: Reason for the force build
+        description: Required reason for a force build
         type: string
         required: false
 
+concurrency:
+  group: immutable-image-publish
+  cancel-in-progress: false
+
 permissions:
   contents: read
-  packages: write
 
 jobs:
   plan:
     runs-on: ubuntu-latest
-    outputs:
-      build-matrix: ${{ steps.output.outputs.build-matrix }}
-      verify-matrix: ${{ steps.output.outputs.verify-matrix }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
@@ -50,13 +49,10 @@ jobs:
         env:
           IMAGE: ${{ inputs.image || 'all' }}
           FORCE: ${{ inputs.force || 'false' }}
+          FORCE_REASON: ${{ inputs.reason || '' }}
           FORCE_NONCE: ${{ github.run_id }}-${{ github.run_attempt }}
           PLAN_OUTPUT: plan.json
         run: mise run plan -- "$IMAGE" ${{ inputs.force && '--force' || '' }}
-      - id: output
-        run: |
-          echo "build-matrix=$(jq -c '[.[] | select(.action == "build")]' plan.json)" >> "$GITHUB_OUTPUT"
-          echo "verify-matrix=$(jq -c '[.[] | select(.action == "build" or .action == "verify")]' plan.json)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: resolved-plan
@@ -65,61 +61,39 @@ jobs:
 
   publish:
     needs: plan
-    if: needs.plan.outputs.build-matrix != '[]'
-    strategy:
-      fail-fast: false
-      matrix:
-        item: ${{ fromJSON(needs.plan.outputs.build-matrix) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: resolved-plan
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
         with:
           install: true
           cache: true
-      - run: sudo apt-get update && sudo apt-get install --yes podman skopeo
+      - run: sudo apt-get update && sudo apt-get install --yes podman distrobox skopeo
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Refuse to overwrite an immutable tag
+      - name: Build, smoke, and publish in dependency order
         env:
-          IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}
-          IMAGE_TAG: ${{ matrix.item.tag }}
-        run: '! skopeo inspect "docker://${IMAGE_REPOSITORY}:${IMAGE_TAG}" >/dev/null 2>&1'
-      - name: Write production lock
-        env:
-          LOCK_JSON: ${{ toJSON(matrix.item.lock) }}
-        run: printf '%s' "$LOCK_JSON" > production.lock.json
-      - name: Build and publish immutable tag
-        env:
-          LOCK_FILE: production.lock.json
-        run: mise run build -- "${{ matrix.item.image }}" "${{ matrix.item.tag }}" --push
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: production-lock-${{ matrix.item.image }}-${{ matrix.item.tag }}
-          path: production.lock.json
-
-  verify:
-    needs: [plan, publish]
-    if: always() && needs.plan.outputs.verify-matrix != '[]' && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
-    strategy:
-      fail-fast: false
-      matrix:
-        item: ${{ fromJSON(needs.plan.outputs.verify-matrix) }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
-        with:
-          install: true
-          cache: true
-      - run: sudo apt-get update && sudo apt-get install --yes podman distrobox
-      - name: Fresh pull from public GHCR
-        run: podman pull "ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}:${{ matrix.item.tag }}"
-      - name: Reference Distrobox smoke
-        run: mise run test:distrobox -- "${{ matrix.item.image }}" "ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}:${{ matrix.item.tag }}"
-      - name: Report verified immutable tag
+          LOCK_OUTPUT_DIR: production-locks
+          RESULT_OUTPUT: publish-result.json
+        run: mise run publish -- plan.json
+      - name: Report published immutable tags
+        if: success()
         run: |
-          echo "### Available: \`ghcr.io/${{ github.repository_owner }}/${{ matrix.item.image }}:${{ matrix.item.tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.[] | "### Published: `\(.repository):\(.tag)`"' publish-result.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: production-results
+          path: |
+            production-locks
+            publish-result.json
+          if-no-files-found: warn

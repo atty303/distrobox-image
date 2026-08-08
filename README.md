@@ -1,29 +1,48 @@
-# Immutable Distrobox images
+# Distrobox images
 
-This repository publishes three Distrobox-oriented Arch images. `arch-toolbox-paru` supplies `paru`,
-`host-spawn`, and `host-exec`; `arch-scroll` supplies the Scroll compositor; and `arch-dms` supplies
-DankMaterialShell and dsearch.
+This repository builds Arch Linux images for Distrobox. Every published tag has passed image and
+reference-Distrobox smoke tests before it is pushed. Tags are immutable; select one and keep it
+pinned in your own configuration.
 
-Only immutable, event-derived tags are published. There is no moving `latest`, `stable`, or
-`candidate` tag. Find a tag marked **Available** in the successful **Build immutable images**
-Actions summary, then put that exact tag in one of the files under
-[`reference/distrobox`](reference/distrobox).
+## Images
 
-Create or update a box with:
+| Image               | Contents                                          | A new tag is built when                                                       |
+| ------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `arch-toolbox-paru` | Common toolbox, `paru`, `host-spawn`, `host-exec` | Monthly base rollup, paru release, host-spawn release, or build-source change |
+| `arch-scroll`       | Scroll and its companion binaries                 | A Scroll release is also available from the matching AUR package              |
+| `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop  | DMS or dsearch releases                                                       |
+
+Parent updates alone do not republish child images. A child takes the newest published parent on its
+next own build.
+
+## Use an image
+
+Find the tag in the **Published** section of a successful **Build immutable images** Actions run.
+Copy a reference definition into your own Distrobox configuration, then replace its reserved
+`image=` value with that exact tag.
 
 ```sh
-distrobox assemble create --file reference/distrobox/scroll.ini
-distrobox assemble create --file reference/distrobox/scroll.ini --replace --name scroll
+mkdir -p ~/.config/distrobox
+cp reference/distrobox/scroll.ini ~/.config/distrobox/scroll.ini
+# Edit ~/.config/distrobox/scroll.ini and set image= to the published immutable tag.
+distrobox assemble create --file ~/.config/distrobox/scroll.ini
 ```
 
-To roll back, restore the previous immutable `image=` tag and run the same `--replace --name`
-command. Keep the working tag in your own Distrobox configuration; this repository never advances it
-for you.
+Adjust UID-specific paths, volumes, and the NVIDIA entry for your host.
 
-Scroll is checked every six hours and waits for its matching AUR package. DMS is rebuilt when either
-DMS or dsearch changes. The toolbox base digest is rolled up monthly, while paru, host-spawn, or
-repository changes can trigger it sooner. Parent-only changes do not republish children.
+## Update or roll back
 
-Adjust volumes, UID-specific paths, and NVIDIA entries for your host. Contributors should run
-`mise run check`; image and Distrobox integration checks are in `mise run check:all`. See
-[`AGENTS.md`](AGENTS.md) for the manifest, lock, testing, and maintenance contract.
+Change `image=` in your own configuration and replace only the selected box:
+
+```sh
+distrobox assemble create --file ~/.config/distrobox/scroll.ini --replace --name scroll
+```
+
+To roll back, restore the previous tag and run the same command. This repository never changes the
+tag selected by a consumer.
+
+## Development
+
+Run `mise run check` for static validation and unit tests. `mise run check:all` also builds the
+image DAG, exercises the reference Distroboxes, and runs the local Actions check. Maintenance rules
+are in [`AGENTS.md`](AGENTS.md).

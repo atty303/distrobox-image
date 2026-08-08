@@ -1,7 +1,7 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertMatch, assertRejects } from "@std/assert";
 import { loadLock } from "../lock.ts";
 import { discoverManifests } from "../manifest.ts";
-import { eventKey, planImage, renderTag } from "../planner.ts";
+import { eventKey, planImage, renderTag, tagPattern } from "../planner.ts";
 import { MemoryRegistry } from "../registry.ts";
 import { productionLock } from "../resolver.ts";
 Deno.test("event keys ignore input and parent values", async () => {
@@ -54,6 +54,38 @@ Deno.test("tag year and month use JST", () =>
     ),
     "arch-2026-02-abcdef01",
   ));
+Deno.test("tag pattern accepts only the manifest's immutable tags", async () => {
+  const manifest = (await discoverManifests()).find((item) => item.name === "arch-scroll")!;
+  assertMatch("scroll-1.12.17-abcdef01", tagPattern(manifest.tag));
+  assertEquals(tagPattern(manifest.tag).test("latest"), false);
+  assertEquals(tagPattern(manifest.tag).test("verified-scroll-1.12.17-abcdef01"), false);
+});
+Deno.test("existing published tag skips and force requires a reason", async () => {
+  const manifest = (await discoverManifests()).find((item) => item.name === "arch-scroll")!;
+  const resolved = { scroll: { value: "1" }, aur: { value: "1", revision: "a".repeat(40) } };
+  const lock = await loadLock(`${manifest.directory}/test.lock.toml`, manifest);
+  const key = await eventKey(manifest, resolved, "tree", new Date("2026-08-01T00:00:00Z"));
+  const tag = renderTag(manifest.tag, resolved, key, new Date("2026-08-01T00:00:00Z"));
+  const item = await planImage(
+    manifest,
+    resolved,
+    "tree",
+    lock,
+    new MemoryRegistry(new Set([`${manifest.repository}:${tag}`])),
+    { now: new Date("2026-08-01T00:00:00Z") },
+  );
+  assertEquals(item.action, "skip");
+  await assertRejects(
+    () =>
+      planImage(manifest, resolved, "tree", lock, new MemoryRegistry(), {
+        now: new Date("2026-08-01T00:00:00Z"),
+        force: true,
+        nonce: "run-1",
+      }),
+    Error,
+    "requires a reason",
+  );
+});
 Deno.test("production lock maps provider metadata", async () => {
   const manifest = (await discoverManifests()).find((m) => m.name === "arch-toolbox-paru")!;
   const resolved = {
@@ -78,4 +110,6 @@ Deno.test("production lock maps provider metadata", async () => {
   assertEquals(lock.build_args.PARU_VERSION, "2.2.0");
   assertEquals(lock.build_args.PARU_COMMIT, "d".repeat(40));
   assertEquals(lock.inputs.host_spawn_sha256, "c".repeat(64));
+  assertEquals(lock.inputs.base_digest, `sha256:${"a".repeat(64)}`);
+  assertEquals(lock.expected["io.atty303.distrobox.paru-version"], "2.2.0");
 });

@@ -1,7 +1,7 @@
 [tools]
 deno = "2.9.3"
 actionlint = "1.7.7"
-act = "0.2.82"
+act = "0.2.89"
 
 [env]
 DENO_FROZEN = "true"
@@ -28,22 +28,28 @@ run = "deno test --allow-read=. ci/tests/planner_test.ts"
 run = "actionlint"
 
 [tasks."test:actions"]
-run = "act pull_request -W .github/workflows/check.yml --input local=true -P ubuntu-latest=catthehacker/ubuntu:act-latest"
+run = "act pull_request -j static -W .github/workflows/check.yml -P ubuntu-latest=docker.io/catthehacker/ubuntu@sha256:3155564c7ca813710844d2e6a664c3c825646234ce9a00b1494e8d5d809817c8"
 
 [tasks."test:images"]
 run = "deno run --allow-read=. --allow-write=/tmp --allow-run=podman --allow-env ci/main.ts test-images"
 
 [tasks."test:distrobox"]
-run = "deno run --allow-read=. --allow-write=/tmp --allow-run=podman,distrobox,mktemp,rm --allow-env ci/main.ts test-distrobox"
+run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=distrobox --allow-env --allow-sys ci/main.ts test-distrobox"
+
+[tasks."test:integration"]
+run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=podman,distrobox --allow-env --allow-sys ci/main.ts test-integration"
+
+[tasks."test:changed"]
+run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=git,podman,distrobox --allow-env --allow-sys ci/main.ts test-changed"
 
 [tasks.plan]
-run = "deno run --allow-read=. --allow-write=/tmp --allow-net=api.github.com,aur.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git ci/main.ts plan"
+run = "deno run --allow-read=. --allow-write=/tmp --allow-net=api.github.com,aur.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git --allow-env=IMAGE,FORCE,FORCE_REASON,FORCE_NONCE,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,PLAN_OUTPUT ci/main.ts plan"
 
 [tasks.build]
-run = "deno run --allow-read=. --allow-write=/tmp --allow-run=podman,git --allow-env ci/main.ts build"
+run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=podman,distrobox --allow-env --allow-sys ci/main.ts build"
 
-[tasks."refresh-fixture"]
-run = "deno run --allow-read=. --allow-write=ci/fixtures --allow-net ci/main.ts refresh-fixture"
+[tasks.publish]
+run = "deno run --allow-read=.,/tmp --allow-write=. --allow-net=api.github.com,aur.archlinux.org --allow-run=podman,distrobox,skopeo,git --allow-env --allow-sys ci/main.ts publish"
 
 [tasks."refresh-lock"]
 run = "deno run --allow-read=. --allow-write=. --allow-net --allow-run=skopeo,git ci/main.ts refresh-lock"
@@ -52,4 +58,8 @@ run = "deno run --allow-read=. --allow-write=. --allow-net --allow-run=skopeo,gi
 depends = ["fmt:check", "lint", "typecheck", "validate", "test:unit", "test:plan", "lint:actions"]
 
 [tasks."check:all"]
-depends = ["check", "test:images", "test:distrobox", "test:actions"]
+run = """
+mise run check
+mise run test:integration -- all
+mise run test:actions
+"""

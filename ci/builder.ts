@@ -1,17 +1,21 @@
 import { lockHash } from "./lock.ts";
 import type { ImageLock, ImageManifest } from "./types.ts";
+
+export function imageReference(manifest: ImageManifest, tag: string): string {
+  return `${manifest.repository}:${tag}`;
+}
+
 export async function buildImage(
   manifest: ImageManifest,
   lock: ImageLock,
   tag: string,
-  push = false,
-): Promise<void> {
+): Promise<string> {
   const args = [
     "build",
     "--file",
     `${manifest.directory}/${manifest.containerfile}`,
     "--tag",
-    `${manifest.repository}:${tag}`,
+    imageReference(manifest, tag),
   ];
   for (const [key, value] of Object.entries(lock.build_args)) {
     args.push("--build-arg", `${key}=${value}`);
@@ -32,14 +36,39 @@ export async function buildImage(
     stderr: "inherit",
   }).output();
   if (!result.success) throw new Error(`podman build failed for ${manifest.name}`);
-  const image = `${manifest.repository}:${tag}`;
-  for (
-    const smoke of manifest.smoke.filter((item) =>
-      !item.command.join(" ").includes("/usr/local/bin/")
-    )
-  ) {
+  return imageReference(manifest, tag);
+}
+
+async function inspectImage(image: string): Promise<Record<string, unknown>> {
+  const inspected = await new Deno.Command("podman", {
+    args: ["inspect", image],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  if (!inspected.success) throw new Error(`cannot inspect ${image}`);
+  return JSON.parse(new TextDecoder().decode(inspected.stdout))[0] as Record<string, unknown>;
+}
+
+export async function smokeImage(
+  manifest: ImageManifest,
+  lock: ImageLock,
+  image: string,
+): Promise<void> {
+  const lockEnvironment = Object.entries(lock.inputs).flatMap(([key, value]) => [
+    "--env",
+    `LOCK_${key.toUpperCase().replaceAll("-", "_")}=${value}`,
+  ]);
+  for (const smoke of manifest.smoke) {
     const checked = await new Deno.Command("podman", {
-      args: ["run", "--rm", "--cap-add", "SYS_NICE", image, ...smoke.command],
+      args: [
+        "run",
+        "--rm",
+        "--cap-add",
+        "SYS_NICE",
+        ...lockEnvironment,
+        image,
+        ...smoke.command,
+      ],
       stdin: "null",
       stdout: "inherit",
       stderr: "inherit",
@@ -48,31 +77,33 @@ export async function buildImage(
       throw new Error(`image smoke failed for ${manifest.name}: ${smoke.command.join(" ")}`);
     }
   }
-  const inspected = await new Deno.Command("podman", {
-    args: ["inspect", image],
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  if (!inspected.success) throw new Error(`cannot inspect ${image}`);
-  const labels = JSON.parse(new TextDecoder().decode(inspected.stdout))[0].Config.Labels as Record<
-    string,
-    string
-  >;
-  for (const [field, expected] of Object.entries(lock.expected)) {
-    if (!field.endsWith("_version")) continue;
-    const component = field.slice(0, -8).replaceAll("_", "-");
-    const actual = labels[`io.atty303.distrobox.${component}-version`];
-    if (actual !== expected) {
-      throw new Error(`${manifest.name}: expected ${component} ${expected}, got ${actual}`);
+  const inspected = await inspectImage(image);
+  const config = inspected.Config as Record<string, unknown>;
+  const labels = config.Labels as Record<string, string>;
+  for (const [label, expected] of Object.entries(lock.expected)) {
+    if (labels[label] !== expected) {
+      throw new Error(`${manifest.name}: expected ${label}=${expected}, got ${labels[label]}`);
     }
   }
-  if (push) {
-    const pushed = await new Deno.Command("podman", {
-      args: ["push", `${manifest.repository}:${tag}`],
-      stdin: "inherit",
-      stdout: "inherit",
-      stderr: "inherit",
-    }).output();
-    if (!pushed.success) throw new Error(`podman push failed for ${manifest.name}`);
+  const expectedHash = await lockHash(lock);
+  if (labels["io.atty303.distrobox.lock-hash"] !== expectedHash) {
+    throw new Error(`${manifest.name}: lock hash label does not match production lock`);
   }
+  const entrypoint = config.Entrypoint;
+  if (
+    entrypoint !== undefined && entrypoint !== null &&
+    (!Array.isArray(entrypoint) || entrypoint.length !== 0)
+  ) {
+    throw new Error(`${manifest.name}: ENTRYPOINT must be empty`);
+  }
+}
+
+export async function pushImage(image: string): Promise<void> {
+  const result = await new Deno.Command("podman", {
+    args: ["push", image],
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  }).output();
+  if (!result.success) throw new Error(`podman push failed for ${image}`);
 }

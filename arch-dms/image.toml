@@ -1,13 +1,14 @@
-schema = 1
+schema = 2
 name = "arch-dms"
 repository = "ghcr.io/atty303/arch-dms"
 context = "."
 containerfile = "Containerfile"
 tag = "dms-{dms.version}-dsearch-{dsearch.version}-{event_hash8}"
-lock_fields = ["parent", "dms_version", "dms_url", "dms_sha256", "dsearch_version", "dsearch_url", "dsearch_sha256", "dgop_version", "dgop_url", "dgop_sha256", "quickshell_aur_version", "quickshell_version", "arch_snapshot"]
+
 [parent]
 image = "arch-toolbox-paru"
 propagation = "on-next-build"
+
 [[triggers]]
 id = "dms"
 type = "github-release"
@@ -15,9 +16,11 @@ role = "build"
 repository = "AvengeMedia/DankMaterialShell"
 channel = "stable"
 build_arg = "DMS_VERSION"
-asset_pattern = "dms-cli-amd64.gz"
-url_arg = "DMS_URL"
-checksum_arg = "DMS_SHA256"
+asset_pattern = "dms-full-amd64.tar.gz"
+url_arg = "DMS_BUNDLE_URL"
+checksum_arg = "DMS_BUNDLE_SHA256"
+label = "io.atty303.distrobox.dms-version"
+
 [[triggers]]
 id = "dsearch"
 type = "github-release"
@@ -28,6 +31,8 @@ build_arg = "DSEARCH_VERSION"
 asset_pattern = "dsearch-linux-amd64.gz"
 url_arg = "DSEARCH_URL"
 checksum_arg = "DSEARCH_SHA256"
+label = "io.atty303.distrobox.dsearch-version"
+
 [[triggers]]
 id = "dgop"
 type = "github-release"
@@ -38,34 +43,42 @@ build_arg = "DGOP_VERSION"
 asset_pattern = "dgop-linux-amd64.gz"
 url_arg = "DGOP_URL"
 checksum_arg = "DGOP_SHA256"
+label = "io.atty303.distrobox.dgop-version"
+
 [[triggers]]
 id = "quickshell-aur"
 type = "git-commit"
 role = "input"
 repository = "https://aur.archlinux.org/quickshell-git.git"
 build_arg = "QUICKSHELL_AUR_COMMIT"
+
 [[triggers]]
 id = "quickshell"
 type = "git-commit"
 role = "input"
 repository = "https://git.outfoxxed.me/quickshell/quickshell.git"
 build_arg = "QUICKSHELL_COMMIT"
-[[triggers]]
-id = "source"
-type = "repo-path"
-role = "input"
-paths = ["arch-dms"]
+label = "io.atty303.distrobox.quickshell-commit"
+
 [reference]
 file = "reference/distrobox/dms.ini"
 section = "dms"
 nvidia_section = "dms-nvidia"
+
 [[smoke]]
-command = ["test", "-x", "/usr/bin/dms"]
+command = ["sudo", "-u", "builder", "--", "/usr/bin/dms", "version"]
+[[smoke]]
+command = ["test", "-f", "/usr/share/quickshell/dms/shell.qml"]
+[[smoke]]
+command = ["sh", "-c", "version=$(sed 's/^v//' /usr/share/quickshell/dms/VERSION) && test \"$version\" = \"$LOCK_DMS_VERSION\" && sudo -u builder -- dms version | grep -F \"$LOCK_DMS_VERSION\""]
+[[smoke]]
+command = ["test", "-x", "/usr/bin/qs"]
 [[smoke]]
 command = ["test", "-x", "/usr/bin/dgop"]
 [[smoke]]
 command = ["test", "-x", "/usr/bin/dsearch"]
-[[smoke]]
+
+[[reference_smoke]]
 command = ["sh", "-c", "test \"$(readlink /usr/local/bin/uwsm)\" = /usr/bin/host-exec"]
-[[smoke]]
+[[reference_smoke]]
 command = ["sh", "-c", "test \"$(readlink /usr/local/bin/ghostty)\" = /usr/bin/host-exec"]

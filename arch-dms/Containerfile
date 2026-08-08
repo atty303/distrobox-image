@@ -2,8 +2,8 @@ ARG BASE_IMAGE=ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fc
 FROM ${BASE_IMAGE}
 ARG ARCH_SNAPSHOT
 ARG DMS_VERSION
-ARG DMS_URL
-ARG DMS_SHA256
+ARG DMS_BUNDLE_URL
+ARG DMS_BUNDLE_SHA256
 ARG DSEARCH_VERSION
 ARG DSEARCH_URL
 ARG DSEARCH_SHA256
@@ -12,19 +12,27 @@ ARG DGOP_URL
 ARG DGOP_SHA256
 ARG QUICKSHELL_AUR_COMMIT
 ARG QUICKSHELL_COMMIT
-RUN test -n "${ARCH_SNAPSHOT}" && test -n "${QUICKSHELL_AUR_COMMIT}" && test -n "${QUICKSHELL_COMMIT}" && \
+RUN test -n "${ARCH_SNAPSHOT}" && test -n "${DMS_VERSION}" && test -n "${QUICKSHELL_AUR_COMMIT}" && test -n "${QUICKSHELL_COMMIT}" && \
     printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
     pacman -Sy --noconfirm --needed vulkan-headers cups-pk-helper kimageformats matugen cava pipewire-jack khal fprintd sway accountsservice && \
     sudo -H -u builder git clone https://aur.archlinux.org/quickshell-git.git /var/build/quickshell-git && \
     sudo -H -u builder git -C /var/build/quickshell-git checkout --detach "${QUICKSHELL_AUR_COMMIT}" && \
     sed -i "s|git+https://git.outfoxxed.me/quickshell/quickshell|git+https://git.outfoxxed.me/quickshell/quickshell#commit=${QUICKSHELL_COMMIT}|" /var/build/quickshell-git/PKGBUILD && \
     sudo -H -u builder bash -lc 'cd /var/build/quickshell-git && makepkg -si --noconfirm --needed' && \
-    for item in "dms:${DMS_URL}:${DMS_SHA256}" "dsearch:${DSEARCH_URL}:${DSEARCH_SHA256}" "dgop:${DGOP_URL}:${DGOP_SHA256}"; do \
+    curl --fail --location --output /tmp/dms-full.tar.gz "${DMS_BUNDLE_URL}" && \
+    echo "${DMS_BUNDLE_SHA256}  /tmp/dms-full.tar.gz" | sha256sum --check --strict && \
+    mkdir /tmp/dms-full && tar -xzf /tmp/dms-full.tar.gz -C /tmp/dms-full && \
+    install -Dm0755 /tmp/dms-full/bin/dms-distropkg /usr/bin/dms && \
+    mkdir -p /usr/share/quickshell && cp -a /tmp/dms-full/dms /usr/share/quickshell/dms && \
+    install -Dm0644 /tmp/dms-full/completions/completion.bash /usr/share/bash-completion/completions/dms && \
+    install -Dm0644 /tmp/dms-full/completions/completion.fish /usr/share/fish/vendor_completions.d/dms.fish && \
+    install -Dm0644 /tmp/dms-full/completions/completion.zsh /usr/share/zsh/site-functions/_dms && \
+    for item in "dsearch:${DSEARCH_URL}:${DSEARCH_SHA256}" "dgop:${DGOP_URL}:${DGOP_SHA256}"; do \
       name="${item%%:*}"; rest="${item#*:}"; url="${rest%:*}"; checksum="${item##*:}"; \
       curl --fail --location --output "/tmp/${name}.gz" "${url}" && \
       echo "${checksum}  /tmp/${name}.gz" | sha256sum --check --strict && \
       gzip --decompress --stdout "/tmp/${name}.gz" > "/usr/bin/${name}" && chmod 0755 "/usr/bin/${name}"; \
-    done && rm -rf /var/build/quickshell-git /tmp/*.gz
+    done && rm -rf /var/build/quickshell-git /tmp/dms-full /tmp/dms-full.tar.gz /tmp/*.gz
 LABEL io.atty303.distrobox.dms-version="${DMS_VERSION}" \
       io.atty303.distrobox.dsearch-version="${DSEARCH_VERSION}" \
       io.atty303.distrobox.dgop-version="${DGOP_VERSION}" \
