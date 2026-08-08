@@ -81,7 +81,9 @@ SIGINT and SIGTERM trigger best-effort cleanup; SIGKILL cannot be handled.
 
 Never modify real HOME, existing containers, or source dotfiles. GPU rendering, real DBus traffic,
 and a complete compositor session are outside the smoke scope. A skipped or sandbox-denied test is
-not a pass.
+not a pass. Keep the caller's `XDG_DATA_HOME` while using the temporary HOME so Distrobox sees the
+image built in the caller's rootless Podman storage without exposing the caller's Distrobox
+configuration.
 
 Do not push Git commits, publish images, delete packages/tags, or mutate external services without
 explicit permission. Final reports list commands, image targets, results, and tests not run.

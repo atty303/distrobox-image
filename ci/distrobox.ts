@@ -74,7 +74,13 @@ export async function smokeDistrobox(
     await Deno.mkdir(line.slice(7).split(":")[0], { recursive: true });
   }
   await Deno.writeTextFile(ini, transformed);
-  const env = { HOME: home, DBX_CONTAINER_MANAGER: "podman" };
+  const containerData = Deno.env.get("XDG_DATA_HOME") ??
+    `${Deno.env.get("HOME")}/.local/share`;
+  const env = {
+    HOME: home,
+    DBX_CONTAINER_MANAGER: "podman",
+    XDG_DATA_HOME: containerData,
+  };
   const cleanup = async () => {
     const result = await new Deno.Command("distrobox", {
       args: ["rm", "--force", name],
