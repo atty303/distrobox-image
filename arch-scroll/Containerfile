@@ -6,7 +6,10 @@ ARG SCROLL_COMMIT
 ARG AUR_COMMIT
 RUN test -n "${ARCH_SNAPSHOT}" && test -n "${AUR_COMMIT}" && test -n "${SCROLL_COMMIT}" && \
     printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
-    sudo -H -u builder git clone https://aur.archlinux.org/sway-scroll.git /var/build/sway-scroll && \
+    for attempt in 1 2 3; do \
+      if sudo -H -u builder git clone https://aur.archlinux.org/sway-scroll.git /var/build/sway-scroll; then break; fi; \
+      rm -rf /var/build/sway-scroll; test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
+    done && \
     sudo -H -u builder git -C /var/build/sway-scroll checkout --detach "${AUR_COMMIT}" && \
     sed -i "s|git+https://github.com/dawsers/scroll.git|git+https://github.com/dawsers/scroll.git#commit=${SCROLL_COMMIT}|" /var/build/sway-scroll/PKGBUILD && \
     sudo -H -u builder bash -lc 'cd /var/build/sway-scroll && makepkg -si --noconfirm --needed' && \

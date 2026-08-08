@@ -13,7 +13,10 @@ RUN test -n "${ARCH_SNAPSHOT}" && \
     pacman -Syu --needed --noconfirm sudo curl ca-certificates git rust && \
     useradd -u 2000 -d /var/build -m -g wheel builder && chmod 755 /var/build && \
     printf 'builder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers && \
-    sudo -H -u builder git clone https://github.com/Morganamilo/paru.git /var/build/paru && \
+    for attempt in 1 2 3; do \
+      if sudo -H -u builder git clone https://github.com/Morganamilo/paru.git /var/build/paru; then break; fi; \
+      rm -rf /var/build/paru; test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
+    done && \
     sudo -H -u builder git -C /var/build/paru checkout --detach "${PARU_COMMIT}" && \
     sudo -H -u builder bash -lc 'cd /var/build/paru && cargo build --locked --release' && \
     install -Dm0755 /var/build/paru/target/release/paru /usr/bin/paru && \

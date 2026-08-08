@@ -60,6 +60,8 @@ their declared permissions. Tool and module versions are exact in `.mise.toml`, 
 `deno.json`, and `deno.lock`. Actions are pinned to commit SHAs; the act runner is pinned by digest.
 Actions installs the same Distrobox release as the local reference environment from the exact
 release commit declared in `.mise.toml`, and the harness always selects Podman explicitly.
+Production locks use the newest complete Arch Linux Archive snapshot before the current JST day; 404
+probes may fall back up to seven days, while transport and server errors fail resolution.
 
 `mise run check` runs format, lint, typecheck, schema/DAG/lock validation, unit/planner tests, and
 actionlint. Image or reference changes require that image's integration test. Parent changes require

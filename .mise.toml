@@ -56,7 +56,7 @@ run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=podman,distro
 run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=git,podman,distrobox --allow-env --allow-sys ci/main.ts test-changed"
 
 [tasks.plan]
-run = "deno run --allow-read=. --allow-write=/tmp,plan.json --allow-net=api.github.com,aur.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git --allow-env=IMAGE,FORCE,FORCE_REASON,FORCE_NONCE,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,PLAN_OUTPUT ci/main.ts plan"
+run = "deno run --allow-read=. --allow-write=/tmp,plan.json --allow-net=api.github.com,aur.archlinux.org,archive.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git --allow-env=IMAGE,FORCE,FORCE_REASON,FORCE_NONCE,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,PLAN_OUTPUT ci/main.ts plan"
 
 [tasks.build]
 run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=podman,distrobox --allow-env --allow-sys ci/main.ts build"
@@ -65,7 +65,7 @@ run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=podman,distro
 run = "deno run --allow-read=.,/tmp --allow-write=. --allow-net=api.github.com,aur.archlinux.org --allow-run=podman,distrobox,skopeo,git --allow-env --allow-sys ci/main.ts publish"
 
 [tasks."refresh-lock"]
-run = "deno run --allow-read=. --allow-write=. --allow-net --allow-run=skopeo,git ci/main.ts refresh-lock"
+run = "deno run --allow-read=. --allow-write=.,/tmp --allow-net=api.github.com,aur.archlinux.org,archive.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git ci/main.ts refresh-lock"
 
 [tasks.check]
 depends = ["fmt:check", "lint", "typecheck", "validate", "test:unit", "test:plan", "lint:actions"]

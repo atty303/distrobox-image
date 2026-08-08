@@ -4,6 +4,7 @@ import { smokeDistrobox } from "./distrobox.ts";
 import { canonicalLock, loadLock, renderLock } from "./lock.ts";
 import { discoverManifests } from "./manifest.ts";
 import { planImage } from "./planner.ts";
+import { resolveArchSnapshot } from "./providers/arch_snapshot.ts";
 import { newestPublishedReference, publishedDigest, SkopeoRegistry } from "./registry.ts";
 import { liveResolve, productionLock, resolveManifest, resolveSourceHash } from "./resolver.ts";
 import type { ImageLock, ImageManifest, PlanItem } from "./types.ts";
@@ -17,17 +18,6 @@ function select(names: string[]): ImageManifest[] {
   const requested = new Set(names);
   for (const name of requested) if (!byName.has(name)) throw new Error(`unknown image ${name}`);
   return manifests.filter((manifest) => requested.has(manifest.name));
-}
-function jstDate(now: Date): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)!.value;
-  return `${value("year")}/${value("month")}/${value("day")}`;
 }
 function withParent(lock: ImageLock, parent: string): ImageLock {
   return {
@@ -119,6 +109,7 @@ switch (command) {
     const nonce = Deno.env.get("FORCE_NONCE") ??
       `${Deno.env.get("GITHUB_RUN_ID") ?? "local"}-${Deno.env.get("GITHUB_RUN_ATTEMPT") ?? "1"}`;
     const now = new Date();
+    const archSnapshot = await resolveArchSnapshot(now);
     const registry = new SkopeoRegistry();
     const output: PlanItem[] = [];
     for (const manifest of select([target])) {
@@ -127,7 +118,7 @@ switch (command) {
         manifest,
         resolved,
         await resolvedParent(manifest, resolved),
-        jstDate(now),
+        archSnapshot,
       );
       output.push(
         await planImage(
@@ -227,11 +218,12 @@ switch (command) {
   case "refresh-lock": {
     const manifest = select([args[0]])[0];
     const resolved = await resolveManifest(manifest, liveResolve);
+    const now = new Date();
     const lock = productionLock(
       manifest,
       resolved,
       await resolvedParent(manifest, resolved),
-      jstDate(new Date()),
+      await resolveArchSnapshot(now),
     );
     const rendered = renderLock(lock);
     const temporary = await Deno.makeTempFile();
