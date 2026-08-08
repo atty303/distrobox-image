@@ -5,6 +5,8 @@ act = "0.2.89"
 
 [env]
 DENO_FROZEN = "true"
+DISTROBOX_VERSION = "1.8.2.4"
+DISTROBOX_COMMIT = "08e4963711ee1c556f8eb44582a3aa0fbb4c9a77"
 
 [tasks."fmt:check"]
 run = "deno fmt --check"
@@ -30,6 +32,17 @@ run = "actionlint"
 [tasks."test:actions"]
 run = "act pull_request -j static -W .github/workflows/check.yml -P ubuntu-latest=docker.io/catthehacker/ubuntu@sha256:3155564c7ca813710844d2e6a664c3c825646234ce9a00b1494e8d5d809817c8"
 
+[tasks."install:distrobox"]
+run = """
+distrobox_source="$(mktemp -d)"
+distrobox_prefix="${DISTROBOX_PREFIX:-$HOME/.local}"
+trap 'rm -rf "$distrobox_source"' EXIT
+git clone --quiet https://github.com/89luca89/distrobox.git "$distrobox_source"
+git -C "$distrobox_source" checkout --quiet --detach "$DISTROBOX_COMMIT"
+"$distrobox_source/install" --prefix "$distrobox_prefix"
+test "$("$distrobox_prefix/bin/distrobox" --version)" = "distrobox: $DISTROBOX_VERSION"
+"""
+
 [tasks."test:images"]
 run = "deno run --allow-read=. --allow-write=/tmp --allow-run=podman --allow-env ci/main.ts test-images"
 
@@ -43,7 +56,7 @@ run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=podman,distro
 run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=git,podman,distrobox --allow-env --allow-sys ci/main.ts test-changed"
 
 [tasks.plan]
-run = "deno run --allow-read=. --allow-write=/tmp --allow-net=api.github.com,aur.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git --allow-env=IMAGE,FORCE,FORCE_REASON,FORCE_NONCE,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,PLAN_OUTPUT ci/main.ts plan"
+run = "deno run --allow-read=. --allow-write=/tmp,plan.json --allow-net=api.github.com,aur.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git --allow-env=IMAGE,FORCE,FORCE_REASON,FORCE_NONCE,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,PLAN_OUTPUT ci/main.ts plan"
 
 [tasks.build]
 run = "deno run --allow-read=.,/tmp --allow-write=/tmp --allow-run=podman,distrobox --allow-env --allow-sys ci/main.ts build"

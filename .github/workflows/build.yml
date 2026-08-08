@@ -74,7 +74,8 @@ jobs:
         with:
           install: true
           cache: true
-      - run: sudo apt-get update && sudo apt-get install --yes podman distrobox skopeo
+      - run: sudo apt-get update && sudo apt-get install --yes podman skopeo
+      - run: mise run install:distrobox
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io

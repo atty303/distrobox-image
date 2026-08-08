@@ -28,7 +28,8 @@ jobs:
         with:
           install: true
           cache: true
-      - run: sudo apt-get update && sudo apt-get install --yes podman distrobox
+      - run: sudo apt-get update && sudo apt-get install --yes podman
+      - run: mise run install:distrobox
       - name: Build and smoke affected images
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}

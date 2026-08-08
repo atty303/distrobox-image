@@ -58,6 +58,8 @@ Resolver, planner, validation, orchestration, registry access, and smoke harness
 TypeScript. Unit tests get no network permission. Live resolution and container tasks receive only
 their declared permissions. Tool and module versions are exact in `.mise.toml`, `mise.lock`,
 `deno.json`, and `deno.lock`. Actions are pinned to commit SHAs; the act runner is pinned by digest.
+Actions installs the same Distrobox release as the local reference environment from the exact
+release commit declared in `.mise.toml`, and the harness always selects Podman explicitly.
 
 `mise run check` runs format, lint, typecheck, schema/DAG/lock validation, unit/planner tests, and
 actionlint. Image or reference changes require that image's integration test. Parent changes require
