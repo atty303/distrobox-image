@@ -40,6 +40,27 @@ export function materializeIni(
   }).join("\n");
 }
 
+export function adaptIniForPodman(source: string, version: string): string {
+  const match = version.match(/podman version (\d+)\.(\d+)/i);
+  if (!match) throw new Error(`cannot parse Podman version: ${version.trim()}`);
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  if (major > 5 || (major === 5 && minor >= 4)) return source;
+  return source.replaceAll(/keep-id:size=\d+/g, "keep-id");
+}
+
+async function output(command: string, args: string[], env?: Record<string, string>) {
+  const result = await new Deno.Command(command, {
+    args,
+    env,
+    stdin: "null",
+    stdout: "piped",
+    stderr: "inherit",
+  }).output();
+  if (!result.success) throw new Error(`${command} ${args.join(" ")} failed`);
+  return new TextDecoder().decode(result.stdout);
+}
+
 async function run(command: string, args: string[], env?: Record<string, string>) {
   const result = await new Deno.Command(command, {
     args,
@@ -61,6 +82,7 @@ export async function smokeDistrobox(
   const home = `${temp}/home`;
   const fixtures = `${temp}/volumes`;
   const ini = `${temp}/distrobox.ini`;
+  const createIni = `${temp}/distrobox-create.ini`;
   await Deno.mkdir(home, { recursive: true });
   await Deno.mkdir(fixtures, { recursive: true });
   const source = await Deno.readTextFile(referencePath(manifest));
@@ -81,6 +103,8 @@ export async function smokeDistrobox(
     DBX_CONTAINER_MANAGER: "podman",
     XDG_DATA_HOME: containerData,
   };
+  const podmanVersion = await output("podman", ["--version"], env);
+  await Deno.writeTextFile(createIni, adaptIniForPodman(transformed, podmanVersion));
   const cleanup = async () => {
     const result = await new Deno.Command("distrobox", {
       args: ["rm", "--force", name],
@@ -104,7 +128,7 @@ export async function smokeDistrobox(
   let cleanupSucceeded = true;
   try {
     await run("distrobox", ["assemble", "create", "--file", ini, "--dry-run"], env);
-    await run("distrobox", ["assemble", "create", "--file", ini, "--name", name], env);
+    await run("distrobox", ["assemble", "create", "--file", createIni, "--name", name], env);
     const lockEnvironment = Object.entries(lock.inputs).map(([key, value]) =>
       `LOCK_${key.toUpperCase().replaceAll("-", "_")}=${value}`
     );

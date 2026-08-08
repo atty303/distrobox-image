@@ -85,5 +85,10 @@ not a pass. Keep the caller's `XDG_DATA_HOME` while using the temporary HOME so 
 image built in the caller's rootless Podman storage without exposing the caller's Distrobox
 configuration.
 
+The checked-in INI and assemble dry-run always retain the local `keep-id:size=65534` flag. For the
+actual create only, the harness removes the unsupported `size` option on Podman versions before 5.4;
+current local Podman receives the reference flags unchanged. This compatibility path must not alter
+the reference snapshot or hide failures in hooks, volumes, exports, or image smoke commands.
+
 Do not push Git commits, publish images, delete packages/tags, or mutate external services without
 explicit permission. Final reports list commands, image targets, results, and tests not run.
