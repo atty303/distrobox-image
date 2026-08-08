@@ -61,7 +61,6 @@ build_arg = "QUICKSHELL_COMMIT"
 label = "io.atty303.distrobox.quickshell-commit"
 
 [reference]
-file = "reference/distrobox/dms.ini"
 section = "dms"
 nvidia_section = "dms-nvidia"
 

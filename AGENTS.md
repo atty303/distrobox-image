@@ -6,11 +6,12 @@ from the operator's real Distrobox state.
 
 ## Image contract
 
-Each image directory contains `Containerfile`, `image.toml`, and `test.lock.toml`. Manifest schema 2
-declares the GHCR repository, immutable tag template, parent, triggers, image smoke commands, and an
-optional reference Distrobox with reference-only smoke commands. Unknown or trigger-inapplicable
-fields are errors. Internal parents must exist and the graph must be acyclic. External and persisted
-lock parents use `@sha256:`.
+Each image directory contains `Containerfile`, `image.toml`, and `test.lock.toml`. Images with a
+reference Distrobox also contain a fixed-name `distrobox.ini`. Manifest schema 2 declares the GHCR
+repository, immutable tag template, parent, triggers, image smoke commands, and an optional
+reference Distrobox with reference-only smoke commands. Unknown or trigger-inapplicable fields are
+errors. Internal parents must exist and the graph must be acyclic. External and persisted lock
+parents use `@sha256:`.
 
 Trigger roles are:
 
@@ -21,7 +22,8 @@ Trigger roles are:
 The event key contains the event and manifest schema versions, image name, build-trigger values, the
 image/common build source hash, and an optional force nonce. Monthly OCI triggers contribute the JST
 year-month instead of every observed digest. Parent, gate, and input values are excluded. Parent
-propagation is always `on-next-build`.
+propagation is always `on-next-build`. Image-local `distrobox.ini` and `test.lock.toml` are also
+excluded from the event source hash: changing either requires checks but does not publish a tag.
 
 Only event tags matching the manifest template are published. A tag is pushed only after its local
 image and reference-Distrobox smoke tests pass, so existence in GHCR means it passed pre-publish
@@ -65,8 +67,9 @@ validation.
 
 ## Distrobox isolation
 
-Reference INIs are repository snapshots, not links to dotfiles. The harness transforms a temporary
-copy line by line so repeated keys survive. It uses unique names and HOME, `pull=false`,
+Reference INIs are image-local repository snapshots, not links to dotfiles. The manifest declares
+their sections; the file path is always `<image-directory>/distrobox.ini`. The harness transforms a
+temporary copy line by line so repeated keys survive. It uses unique names and HOME, `pull=false`,
 `start_now=false`, fixture host-volume sources, preserved container targets, hooks, flags, exports,
 and rewritten NVIDIA includes. It dry-runs every entry, creates only the base entry, runs image and
 reference smoke commands, verifies exported binaries, and removes the container and temporary data.

@@ -59,7 +59,7 @@ export interface ImageManifest {
     propagation: "on-next-build";
   };
   triggers: Trigger[];
-  reference?: { file: string; section: string; nvidia_section?: string };
+  reference?: { section: string; nvidia_section?: string };
   smoke: SmokeCommand[];
   reference_smoke: SmokeCommand[];
   directory: string;

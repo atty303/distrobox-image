@@ -74,6 +74,10 @@ async function mustExist(path: string, label: string) {
   }
 }
 
+export function referencePath(manifest: ImageManifest): string {
+  return `${manifest.directory}/distrobox.ini`;
+}
+
 function parseTrigger(raw: unknown, path: string, index: number): Trigger {
   const label = `${path} trigger ${index}`;
   const table = record(raw, label);
@@ -174,7 +178,7 @@ export async function loadManifest(path: string): Promise<ImageManifest> {
 
   const referenceRaw = raw.reference ? record(raw.reference, `${path}.reference`) : undefined;
   if (referenceRaw) {
-    unknownKeys(referenceRaw, new Set(["file", "section", "nvidia_section"]), "reference");
+    unknownKeys(referenceRaw, new Set(["section", "nvidia_section"]), "reference");
   }
   const manifest: ImageManifest = {
     schema: 2,
@@ -196,7 +200,6 @@ export async function loadManifest(path: string): Promise<ImageManifest> {
       : undefined,
     reference: referenceRaw
       ? {
-        file: requiredString(referenceRaw.file, `${path}.reference.file`),
         section: requiredString(referenceRaw.section, `${path}.reference.section`),
         nvidia_section: referenceRaw.nvidia_section as string | undefined,
       }
@@ -221,8 +224,9 @@ export async function loadManifest(path: string): Promise<ImageManifest> {
   }
   await mustExist(`${directory}/${manifest.containerfile}`, `${path}.containerfile`);
   if (manifest.reference) {
-    await mustExist(manifest.reference.file, `${path}.reference.file`);
-    const text = await Deno.readTextFile(manifest.reference.file);
+    const reference = referencePath(manifest);
+    await mustExist(reference, `${path}.reference`);
+    const text = await Deno.readTextFile(reference);
     for (
       const section of [manifest.reference.section, manifest.reference.nvidia_section].filter(
         Boolean,

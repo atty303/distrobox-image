@@ -1,9 +1,9 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { materializeIni } from "../distrobox.ts";
-import { discoverManifests } from "../manifest.ts";
+import { discoverManifests, referencePath } from "../manifest.ts";
 Deno.test("INI materialization preserves repeated keys and rewrites includes", async () => {
   const manifest = (await discoverManifests()).find((m) => m.name === "arch-scroll")!;
-  const input = await Deno.readTextFile(manifest.reference!.file);
+  const input = await Deno.readTextFile(referencePath(manifest));
   const output = materializeIni(input, manifest, {
     name: "run-scroll",
     image: "localhost/scroll:test",

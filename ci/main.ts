@@ -1,4 +1,5 @@
 import { buildImage, imageReference, pushImage, smokeImage } from "./builder.ts";
+import { affectedImages } from "./affected.ts";
 import { smokeDistrobox } from "./distrobox.ts";
 import { canonicalLock, loadLock, renderLock } from "./lock.ts";
 import { discoverManifests } from "./manifest.ts";
@@ -85,19 +86,6 @@ async function runIntegration(selected: ImageManifest[], distrobox: boolean) {
     localParents.set(manifest.name, image);
   }
 }
-function descendants(names: Set<string>): Set<string> {
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const manifest of manifests) {
-      if (manifest.parent?.image && names.has(manifest.parent.image) && !names.has(manifest.name)) {
-        names.add(manifest.name);
-        changed = true;
-      }
-    }
-  }
-  return names;
-}
 async function affected(base: string, head: string): Promise<ImageManifest[]> {
   const result = await new Deno.Command("git", {
     args: ["diff", "--name-only", base, head],
@@ -106,29 +94,7 @@ async function affected(base: string, head: string): Promise<ImageManifest[]> {
   }).output();
   if (!result.success) return manifests;
   const paths = new TextDecoder().decode(result.stdout).trim().split("\n").filter(Boolean);
-  const names = new Set<string>();
-  let all = false;
-  for (const path of paths) {
-    const direct = manifests.find((manifest) =>
-      path.startsWith(`${manifest.directory.replace(/^\.\//, "")}/`)
-    );
-    if (direct) {
-      names.add(direct.name);
-      continue;
-    }
-    const reference = manifests.find((manifest) => manifest.reference?.file === path);
-    if (reference) {
-      names.add(reference.name);
-      continue;
-    }
-    if (/^(README\.md|AGENTS\.md|reference\/distrobox\/README\.md)$/.test(path)) continue;
-    if (/^(ci\/|deno\.|mise\.lock|\.mise\.toml|\.github\/workflows\/)/.test(path)) {
-      all = true;
-      continue;
-    }
-    all = true;
-  }
-  return all ? manifests : manifests.filter((manifest) => descendants(names).has(manifest.name));
+  return affectedImages(manifests, paths);
 }
 
 switch (command) {

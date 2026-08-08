@@ -30,7 +30,6 @@ label = "io.atty303.distrobox.aur-commit"
 label_source = "revision"
 
 [reference]
-file = "reference/distrobox/scroll.ini"
 section = "scroll"
 nvidia_section = "scroll-nvidia"
 

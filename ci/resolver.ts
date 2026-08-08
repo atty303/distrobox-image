@@ -50,16 +50,33 @@ export async function resolveSourceHash(manifest: ImageManifest): Promise<string
     ".mise.toml",
     "mise.lock",
   ];
-  const values: string[] = [];
-  for (const path of paths) {
-    const result = await new Deno.Command("git", {
-      args: ["rev-parse", `HEAD:${path}`],
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-    if (!result.success) throw new Error(`cannot hash source path ${path}`);
-    values.push(`${path}:${new TextDecoder().decode(result.stdout).trim()}`);
-  }
+  const result = await new Deno.Command("git", {
+    args: ["ls-tree", "-r", "--full-tree", "HEAD", "--", ...paths],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  if (!result.success) throw new Error(`cannot hash source paths for ${manifest.name}`);
+  const entries = new TextDecoder().decode(result.stdout).trim().split("\n").filter(Boolean).map(
+    (line) => {
+      const [metadata, path] = line.split("\t", 2);
+      return `${metadata.split(" ")[2]}:${path}`;
+    },
+  );
+  return await sourceHashFromEntries(manifest, entries);
+}
+
+export function isEventSourcePath(manifest: ImageManifest, path: string): boolean {
+  const directory = manifest.directory.replace(/^\.\//, "");
+  return path !== `${directory}/distrobox.ini` && path !== `${directory}/test.lock.toml`;
+}
+
+export async function sourceHashFromEntries(
+  manifest: ImageManifest,
+  entries: string[],
+): Promise<string> {
+  const values = entries.filter((entry) =>
+    isEventSourcePath(manifest, entry.slice(entry.indexOf(":") + 1))
+  ).sort();
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(values.join("\n")));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }

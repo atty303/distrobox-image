@@ -1,4 +1,5 @@
 import type { ImageLock, ImageManifest } from "./types.ts";
+import { referencePath } from "./manifest.ts";
 
 export interface MaterializeOptions {
   name: string;
@@ -62,7 +63,7 @@ export async function smokeDistrobox(
   const ini = `${temp}/distrobox.ini`;
   await Deno.mkdir(home, { recursive: true });
   await Deno.mkdir(fixtures, { recursive: true });
-  const source = await Deno.readTextFile(manifest.reference.file);
+  const source = await Deno.readTextFile(referencePath(manifest));
   const transformed = materializeIni(source, manifest, {
     name,
     image,

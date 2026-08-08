@@ -23,7 +23,7 @@ Copy a reference definition into your own Distrobox configuration, then replace 
 
 ```sh
 mkdir -p ~/.config/distrobox
-cp reference/distrobox/scroll.ini ~/.config/distrobox/scroll.ini
+cp arch-scroll/distrobox.ini ~/.config/distrobox/scroll.ini
 # Edit ~/.config/distrobox/scroll.ini and set image= to the published immutable tag.
 distrobox assemble create --file ~/.config/distrobox/scroll.ini
 ```
