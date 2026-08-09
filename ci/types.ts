@@ -1,4 +1,4 @@
-export type TriggerRole = "build" | "gate" | "input";
+export type TriggerRole = "build" | "input";
 
 interface TriggerBase {
   id: string;
@@ -21,7 +21,6 @@ export interface GitHubReleaseTrigger extends TriggerBase {
 export interface AurVersionTrigger extends TriggerBase {
   type: "aur-version";
   package: string;
-  matches?: string;
 }
 
 export interface OciDigestTrigger extends TriggerBase {
@@ -82,7 +81,7 @@ export interface ResolvedValue {
 export interface PlanItem {
   image: string;
   repository: string;
-  action: "build" | "skip" | "wait";
+  action: "build" | "skip";
   reason: string;
   eventKey?: string;
   tag?: string;

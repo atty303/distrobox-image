@@ -11,9 +11,9 @@ Deno.test("GitHub provider ignores draft and prerelease", () =>
     }]).value,
     "1",
   ));
-Deno.test("AUR provider normalizes epoch and pkgrel", () =>
+Deno.test("AUR provider normalizes epoch and subrelease pkgrel", () =>
   assertEquals(
-    parseAur({ resultcount: 1, results: [{ Name: "pkg", Version: "1:2.3-4" }] }, "pkg").value,
+    parseAur({ resultcount: 1, results: [{ Name: "pkg", Version: "1:2.3-4.1" }] }, "pkg").value,
     "2.3",
   ));
 Deno.test("OCI provider requires sha256", () => {

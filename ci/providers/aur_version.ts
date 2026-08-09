@@ -8,7 +8,7 @@ export function parseAur(payload: unknown, packageName: string): ResolvedValue {
   if (!Array.isArray(data.results)) throw new Error("AUR response has no results array");
   const item = data.results.find((result) => result.Name === packageName);
   if (!item?.Version) throw new Error(`AUR package not found: ${packageName}`);
-  const value = item.Version.replace(/^\d+:/, "").replace(/-\d+$/, "");
+  const value = item.Version.replace(/^\d+:/, "").replace(/-\d+(?:\.\d+)?$/, "");
   return {
     value,
     revision: item.LastModified?.toString(),

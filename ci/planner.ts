@@ -29,10 +29,18 @@ export async function eventKey(
   nonce?: string,
 ): Promise<string> {
   const month = jstYearMonth(now).key;
-  const build = manifest.triggers.filter((trigger) => trigger.role === "build").map((trigger) => [
-    trigger.id,
-    trigger.type === "oci-digest" && trigger.monthly ? month : resolved[trigger.id]?.value,
-  ]).sort(([a], [b]) => a!.localeCompare(b!));
+  const build = manifest.triggers.filter((trigger) => trigger.role === "build").map((trigger) => {
+    const result = resolved[trigger.id];
+    if (trigger.type === "aur-version" && !result?.revision) {
+      throw new Error(`${manifest.name}: ${trigger.id} has no AUR commit`);
+    }
+    const identity = trigger.type === "oci-digest" && trigger.monthly
+      ? month
+      : trigger.type === "aur-version"
+      ? result.revision
+      : result?.value;
+    return [trigger.id, identity];
+  }).sort(([a], [b]) => a!.localeCompare(b!));
   return await sha256(JSON.stringify({
     eventSchema: EVENT_SCHEMA,
     manifestSchema: manifest.schema,
@@ -73,12 +81,6 @@ export function tagPattern(template: string): RegExp {
     .replace(/\\\{[^}]+\\\}/g, "[A-Za-z0-9_.-]+");
   return new RegExp(`^${pattern}$`);
 }
-function gatesPass(manifest: ImageManifest, resolved: Record<string, ResolvedValue>): boolean {
-  return manifest.triggers.filter((trigger) => trigger.role === "gate").every((trigger) =>
-    trigger.type === "aur-version" &&
-    resolved[trigger.id]?.value === resolved[trigger.matches!]?.value
-  );
-}
 export async function planImage(
   manifest: ImageManifest,
   resolved: Record<string, ResolvedValue>,
@@ -88,9 +90,6 @@ export async function planImage(
   options: PlanOptions,
 ): Promise<PlanItem> {
   const common = { image: manifest.name, repository: manifest.repository };
-  if (!gatesPass(manifest, resolved)) {
-    return { ...common, action: "wait", reason: "gate trigger has not caught up" };
-  }
   if (options.force && !options.manualReason?.trim()) {
     throw new Error("manual force requires a reason");
   }

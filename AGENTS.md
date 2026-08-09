@@ -16,14 +16,14 @@ parents use `@sha256:`.
 Trigger roles are:
 
 - `build`: changes the event key and may create a tag.
-- `gate`: blocks a build until its value matches another trigger.
 - `input`: is pinned in the production lock but does not create an event by itself.
 
-The event key contains the event and manifest schema versions, image name, build-trigger values, the
-image/common build source hash, and an optional force nonce. Monthly OCI triggers contribute the JST
-year-month instead of every observed digest. Parent, gate, and input values are excluded. Parent
-propagation is always `on-next-build`. Image-local `distrobox.ini` and `test.lock.toml` are also
-excluded from the event source hash: changing either requires checks but does not publish a tag.
+The event key contains the event and manifest schema versions, image name, build-trigger identities,
+the image/common build source hash, and an optional force nonce. AUR build triggers use the exact
+AUR commit as their identity. Monthly OCI triggers contribute the JST year-month instead of every
+observed digest. Parent and input values are excluded. Parent propagation is always `on-next-build`.
+Image-local `distrobox.ini` and `test.lock.toml` are also excluded from the event source hash:
+changing either requires checks but does not publish a tag.
 
 Only event tags matching the manifest template are published. A tag is pushed only after its local
 image and reference-Distrobox smoke tests pass, so existence in GHCR means it passed pre-publish
@@ -36,9 +36,11 @@ uploaded as artifacts. Trigger types determine required version, commit, digest,
 build-argument fields. Keep `inputs`, `build_args`, and full OCI-label keys in `expected`
 consistent.
 
-Vendor assets require versioned HTTPS URLs and SHA-256. Git and AUR sources use exact commits.
-Containerfiles consume only lock arguments, verify downloads, select the locked Arch snapshot,
-preserve the non-root builder, record expected metadata, and end with `ENTRYPOINT []`.
+Vendor assets require versioned HTTPS URLs and SHA-256. Manifest-declared Git sources and AUR
+package repositories use exact commits. Sources selected by a pinned AUR package's PKGBUILD remain
+the AUR package's responsibility. Containerfiles consume only lock arguments, verify downloads,
+select the locked Arch snapshot, preserve the non-root builder, record expected metadata, and end
+with `ENTRYPOINT []`.
 
 ## Build and publication
 

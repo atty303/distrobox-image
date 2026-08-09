@@ -32,11 +32,11 @@ const TYPE_KEYS: Record<string, Set<string>> = {
     "url_arg",
     "checksum_arg",
   ]),
-  "aur-version": new Set([...COMMON_TRIGGER_KEYS, "package", "matches"]),
+  "aur-version": new Set([...COMMON_TRIGGER_KEYS, "package"]),
   "oci-digest": new Set([...COMMON_TRIGGER_KEYS, "image", "monthly"]),
   "git-commit": new Set([...COMMON_TRIGGER_KEYS, "repository", "ref"]),
 };
-const ROLES = new Set<TriggerRole>(["build", "gate", "input"]);
+const ROLES = new Set<TriggerRole>(["build", "input"]);
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -114,7 +114,6 @@ function parseTrigger(raw: unknown, path: string, index: number): Trigger {
         ...common,
         type,
         package: requiredString(table.package, `${label}.package`),
-        matches: table.matches as string | undefined,
       };
     case "oci-digest":
       return {
@@ -147,12 +146,6 @@ export async function loadManifest(path: string): Promise<ImageManifest> {
   const ids = triggers.map((trigger) => trigger.id);
   if (new Set(ids).size !== ids.length) throw new Error(`${path}: duplicate trigger id`);
   for (const trigger of triggers) {
-    if (trigger.role === "gate" && (trigger.type !== "aur-version" || !trigger.matches)) {
-      throw new Error(`${path}: gate ${trigger.id} requires matches`);
-    }
-    if (trigger.role === "gate" && !ids.includes((trigger as { matches?: string }).matches!)) {
-      throw new Error(`${path}: ${trigger.id} has invalid gate match`);
-    }
     if (trigger.label_source === "revision" && trigger.type === "git-commit") {
       throw new Error(`${path}: git-commit labels use value, not revision`);
     }

@@ -3,31 +3,20 @@ name = "arch-scroll"
 repository = "ghcr.io/atty303/arch-scroll"
 context = "."
 containerfile = "Containerfile"
-tag = "scroll-{scroll.version}-{event_hash8}"
+tag = "scroll-{aur.version}-{event_hash8}"
 
 [parent]
 image = "arch-toolbox-paru"
 propagation = "on-next-build"
 
 [[triggers]]
-id = "scroll"
-type = "github-release"
-role = "build"
-repository = "dawsers/scroll"
-channel = "stable"
-build_arg = "SCROLL_VERSION"
-revision_arg = "SCROLL_COMMIT"
-label = "io.atty303.distrobox.scroll-version"
-
-[[triggers]]
 id = "aur"
 type = "aur-version"
-role = "gate"
+role = "build"
 package = "sway-scroll"
-matches = "scroll"
+build_arg = "SCROLL_VERSION"
 revision_arg = "AUR_COMMIT"
-label = "io.atty303.distrobox.aur-commit"
-label_source = "revision"
+label = "io.atty303.distrobox.scroll-version"
 
 [reference]
 section = "scroll"
@@ -36,7 +25,7 @@ nvidia_section = "scroll-nvidia"
 [[smoke]]
 command = ["/usr/bin/scroll", "--version"]
 [[smoke]]
-command = ["sh", "-c", "installed=$(pacman -Q sway-scroll | awk '{print $2}') && test \"${installed%-*}\" = \"$LOCK_SCROLL_VERSION\""]
+command = ["sh", "-c", "installed=$(pacman -Q sway-scroll | awk '{print $2}') && test \"${installed%-*}\" = \"$LOCK_AUR_VERSION\""]
 [[smoke]]
 command = ["test", "-x", "/usr/bin/scrollmsg"]
 [[smoke]]

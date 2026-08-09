@@ -9,7 +9,7 @@ pinned in your own configuration.
 | Image               | Contents                                          | A new tag is built when                                                       |
 | ------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `arch-toolbox-paru` | Common toolbox, `paru`, `host-spawn`, `host-exec` | Monthly base rollup, paru release, host-spawn release, or build-source change |
-| `arch-scroll`       | Scroll and its companion binaries                 | A Scroll release is also available from the matching AUR package              |
+| `arch-scroll`       | Scroll and its companion binaries                 | The Scroll AUR package source changes                                         |
 | `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop  | DMS or dsearch releases                                                       |
 | `arch-noctalia`     | Noctalia shell and PipeWire/WirePlumber runtime   | The Noctalia AUR package source changes                                       |
 

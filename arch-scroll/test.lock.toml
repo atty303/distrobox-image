@@ -2,20 +2,16 @@ schema = 2
 image = "arch-scroll"
 
 [inputs]
-parent = "ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4"
-arch_snapshot = "2026/08/01"
-scroll_version = "1.12.17"
-scroll_commit = "262b38c83e305cd646ac0b86daf38bd550cab64d"
+parent = "ghcr.io/atty303/arch-toolbox-paru@sha256:06ceb240e8bb546c34c949c5e24b7b137c91ec1204c78fc93a9e8939b53fce25"
+arch_snapshot = "2026/08/08"
 aur_version = "1.12.17"
 aur_commit = "116b639b66e7a35e9194d6b462ddaadf5407b84d"
 
 [build_args]
-BASE_IMAGE = "ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4"
-ARCH_SNAPSHOT = "2026/08/01"
-SCROLL_VERSION = "1.12.17"
-SCROLL_COMMIT = "262b38c83e305cd646ac0b86daf38bd550cab64d"
+BASE_IMAGE = "ghcr.io/atty303/arch-toolbox-paru@sha256:06ceb240e8bb546c34c949c5e24b7b137c91ec1204c78fc93a9e8939b53fce25"
+ARCH_SNAPSHOT = "2026/08/08"
 AUR_COMMIT = "116b639b66e7a35e9194d6b462ddaadf5407b84d"
+SCROLL_VERSION = "1.12.17"
 
 [expected]
 "io.atty303.distrobox.scroll-version" = "1.12.17"
-"io.atty303.distrobox.aur-commit" = "116b639b66e7a35e9194d6b462ddaadf5407b84d"

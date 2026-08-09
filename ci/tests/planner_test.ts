@@ -4,12 +4,25 @@ import { discoverManifests } from "../manifest.ts";
 import { eventKey, planImage, renderTag, tagPattern } from "../planner.ts";
 import { MemoryRegistry } from "../registry.ts";
 import { productionLock } from "../resolver.ts";
-Deno.test("event keys ignore input and parent values", async () => {
+Deno.test("event keys ignore parent values", async () => {
   const manifest = (await discoverManifests()).find((m) => m.name === "arch-scroll")!;
-  const a = { scroll: { value: "1.2.3" }, aur: { value: "1.2.3" }, parent: { value: "aaa" } };
+  const a = {
+    aur: { value: "1.2.3", revision: "a".repeat(40) },
+    parent: { value: "aaa" },
+  };
   const b = { ...a, parent: { value: "bbb" } };
   const now = new Date("2026-08-01T00:00:00Z");
   assertEquals(await eventKey(manifest, a, "tree", now), await eventKey(manifest, b, "tree", now));
+});
+Deno.test("AUR source commits create Scroll build events", async () => {
+  const manifest = (await discoverManifests()).find((m) => m.name === "arch-scroll")!;
+  const a = { aur: { value: "1.2.3", revision: "a".repeat(40) } };
+  const b = { aur: { value: "1.2.3", revision: "b".repeat(40) } };
+  const now = new Date("2026-08-01T00:00:00Z");
+  assertEquals(
+    await eventKey(manifest, a, "tree", now) === await eventKey(manifest, b, "tree", now),
+    false,
+  );
 });
 Deno.test("monthly trigger rolls digest changes into one JST month", async () => {
   const manifest = (await discoverManifests()).find((m) => m.name === "arch-toolbox-paru")!;
@@ -29,15 +42,6 @@ Deno.test("monthly trigger rolls digest changes into one JST month", async () =>
     await eventKey(manifest, a, "tree", august) === await eventKey(manifest, a, "tree", september),
     false,
   );
-});
-Deno.test("gate mismatch waits", async () => {
-  const manifest = (await discoverManifests()).find((m) => m.name === "arch-scroll")!;
-  const resolved = { scroll: { value: "2" }, aur: { value: "1" }, source: { value: "tree" } };
-  const lock = await loadLock(`${manifest.directory}/test.lock.toml`, manifest);
-  const item = await planImage(manifest, resolved, "tree", lock, new MemoryRegistry(), {
-    now: new Date("2026-08-01T00:00:00Z"),
-  });
-  assertEquals(item.action, "wait");
 });
 Deno.test("tag rendering is deterministic", () =>
   assertEquals(
@@ -62,7 +66,7 @@ Deno.test("tag pattern accepts only the manifest's immutable tags", async () => 
 });
 Deno.test("existing published tag skips and force requires a reason", async () => {
   const manifest = (await discoverManifests()).find((item) => item.name === "arch-scroll")!;
-  const resolved = { scroll: { value: "1" }, aur: { value: "1", revision: "a".repeat(40) } };
+  const resolved = { aur: { value: "1", revision: "a".repeat(40) } };
   const lock = await loadLock(`${manifest.directory}/test.lock.toml`, manifest);
   const key = await eventKey(manifest, resolved, "tree", new Date("2026-08-01T00:00:00Z"));
   const tag = renderTag(manifest.tag, resolved, key, new Date("2026-08-01T00:00:00Z"));
