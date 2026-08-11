@@ -1,21 +1,15 @@
-ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985
+ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295
 FROM ${BASE_IMAGE}
-
 ARG ARCH_SNAPSHOT
 ARG PARU_VERSION
 ARG PARU_COMMIT
 ARG HOST_SPAWN_VERSION
 ARG HOST_SPAWN_URL
 ARG HOST_SPAWN_SHA256
-
-RUN test -n "${ARCH_SNAPSHOT}" && \
-    printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
-    for attempt in 1 2 3; do \
-      if pacman -Syu --needed --noconfirm sudo curl ca-certificates git rust; then break; fi; \
-      test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
-    done && \
-    useradd -u 2000 -d /var/build -m -g wheel builder && chmod 755 /var/build && \
-    printf 'builder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers && \
+COPY common/arch/provision.sh /tmp/provision-arch
+COPY common/arch/host-exec.sh /usr/bin/host-exec
+RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && \
+    pacman -S --needed --noconfirm rust && \
     for attempt in 1 2 3; do \
       if sudo -H -u builder git clone https://github.com/Morganamilo/paru.git /var/build/paru; then break; fi; \
       rm -rf /var/build/paru; test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
@@ -26,12 +20,7 @@ RUN test -n "${ARCH_SNAPSHOT}" && \
     install -Dm0644 /var/build/paru/paru.conf /etc/paru.conf && \
     install -Dm0644 /var/build/paru/man/paru.8 /usr/share/man/man8/paru.8 && \
     install -Dm0644 /var/build/paru/man/paru.conf.5 /usr/share/man/man5/paru.conf.5 && \
-    curl --fail --location --output /usr/bin/host-spawn "${HOST_SPAWN_URL}" && \
-    echo "${HOST_SPAWN_SHA256}  /usr/bin/host-spawn" | sha256sum --check --strict && \
-    chmod 0755 /usr/bin/host-spawn && rm -rf /var/build/paru
-
-COPY host-exec.sh /usr/bin/host-exec
-RUN chmod 0755 /usr/bin/host-exec
+    rm -rf /var/build/paru /tmp/provision-arch
 LABEL io.atty303.distrobox.paru-version="${PARU_VERSION}" \
       io.atty303.distrobox.paru-commit="${PARU_COMMIT}" \
       io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \

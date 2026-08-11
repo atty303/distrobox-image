@@ -6,15 +6,17 @@ pinned in your own configuration.
 
 ## Images
 
-| Image               | Contents                                          | A new tag is built when                                                       |
-| ------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `arch-toolbox-paru` | Common toolbox, `paru`, `host-spawn`, `host-exec` | Monthly base rollup, paru release, host-spawn release, or build-source change |
-| `arch-scroll`       | Scroll and its companion binaries                 | The Scroll AUR package source changes                                         |
-| `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop  | DMS or dsearch releases                                                       |
-| `arch-noctalia`     | Noctalia shell and PipeWire/WirePlumber runtime   | The Noctalia AUR package source changes                                       |
+| Image               | Contents                                           | A new tag is built when                                       |
+| ------------------- | -------------------------------------------------- | ------------------------------------------------------------- |
+| `arch-toolbox-paru` | Toolbox with `paru`, `host-spawn`, and `host-exec` | paru, host-spawn, or the shared build overlay changes         |
+| `arch-scroll`       | Scroll and its companion binaries                  | The Scroll AUR package source or shared build overlay changes |
+| `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop   | DMS, dsearch, or the shared build overlay changes             |
+| `arch-noctalia`     | Noctalia shell and PipeWire/WirePlumber runtime    | The Noctalia AUR source or shared build overlay changes       |
+| `arch-vicinae`      | Vicinae application launcher                       | The Vicinae AUR source or shared build overlay changes        |
 
-Parent updates alone do not republish child images. A child takes the newest published parent on its
-next own build.
+Each image is independent and starts directly from the locked Arch Toolbx base. Base and other
+input-only updates are adopted the next time an image has its own build event; they do not create
+tags by themselves. Changes to the repository's shared Arch build overlay rebuild every image.
 
 ## Use an image
 
@@ -46,6 +48,11 @@ enabled = false
 Use the host compositor's screen locker. A rootless Distrobox does not authenticate against the
 host's PAM password database.
 
+Vicinae reads the mounted host application metadata. Set its **Applications Launch Prefix** to
+`host-exec` so selected desktop applications start on the host. The reference INI leaves
+`/dev/input` and `/dev/uinput` as commented examples; enable them only if a Vicinae feature you use
+requires direct input-device access.
+
 ## Update or roll back
 
 Change `image=` in your own configuration and replace only the selected box:
@@ -60,5 +67,5 @@ tag selected by a consumer.
 ## Development
 
 Run `mise run check` for static validation and unit tests. `mise run check:all` also builds the
-image DAG, exercises the reference Distroboxes, and runs the local Actions check. Maintenance rules
-are in [`AGENTS.md`](AGENTS.md).
+images, exercises the reference Distroboxes, and runs the local Actions check. Maintenance rules are
+in [`AGENTS.md`](AGENTS.md).

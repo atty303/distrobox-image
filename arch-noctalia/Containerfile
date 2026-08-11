@@ -1,10 +1,14 @@
-ARG BASE_IMAGE=ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4
+ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295
 FROM ${BASE_IMAGE}
 ARG ARCH_SNAPSHOT
-ARG NOCTALIA_VERSION
+ARG HOST_SPAWN_VERSION
+ARG HOST_SPAWN_URL
+ARG HOST_SPAWN_SHA256
 ARG AUR_COMMIT
-RUN test -n "${ARCH_SNAPSHOT}" && test -n "${NOCTALIA_VERSION}" && test -n "${AUR_COMMIT}" && \
-    printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
+COPY common/arch/provision.sh /tmp/provision-arch
+COPY common/arch/host-exec.sh /usr/bin/host-exec
+RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && \
+    test -n "${AUR_COMMIT}" && \
     for attempt in 1 2 3; do \
       if pacman -Sy --needed --noconfirm pipewire wireplumber; then break; fi; \
       test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
@@ -15,9 +19,10 @@ RUN test -n "${ARCH_SNAPSHOT}" && test -n "${NOCTALIA_VERSION}" && test -n "${AU
     done && \
     sudo -H -u builder git -C /var/build/noctalia checkout --detach "${AUR_COMMIT}" && \
     sudo -H -u builder bash -lc 'cd /var/build/noctalia && makepkg -si --noconfirm --needed' && \
-    installed="$(pacman -Q noctalia | awk '{print $2}')" && test "${installed%-*}" = "${NOCTALIA_VERSION}" && \
-    rm -rf /var/build/noctalia
-LABEL io.atty303.distrobox.noctalia-version="${NOCTALIA_VERSION}" \
-      io.atty303.distrobox.aur-commit="${AUR_COMMIT}" \
+    pacman -Q noctalia && \
+    printf '\nIgnorePkg = noctalia\n' >> /etc/pacman.conf && \
+    rm -rf /var/build/noctalia /tmp/provision-arch
+LABEL io.atty303.distrobox.aur-commit="${AUR_COMMIT}" \
+      io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \
       io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
 ENTRYPOINT []

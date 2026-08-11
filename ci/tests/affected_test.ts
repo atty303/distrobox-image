@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import { affectedImages } from "../affected.ts";
 import { discoverManifests } from "../manifest.ts";
 
-Deno.test("image-local Distrobox changes select the image and descendants", async () => {
+Deno.test("image-local changes stay local while common changes select all images", async () => {
   const manifests = await discoverManifests();
   assertEquals(
     affectedImages(manifests, ["arch-scroll/distrobox.ini"]).map((item) => item.name),
@@ -10,6 +10,10 @@ Deno.test("image-local Distrobox changes select the image and descendants", asyn
   );
   assertEquals(
     affectedImages(manifests, ["arch-toolbox-paru/distrobox.ini"]).map((item) => item.name),
-    ["arch-toolbox-paru", "arch-dms", "arch-noctalia", "arch-scroll"],
+    ["arch-toolbox-paru"],
+  );
+  assertEquals(
+    affectedImages(manifests, ["common/arch/provision.sh"]).map((item) => item.name),
+    manifests.map((item) => item.name),
   );
 });

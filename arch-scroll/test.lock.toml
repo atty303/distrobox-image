@@ -1,17 +1,24 @@
-schema = 2
+schema = 3
 image = "arch-scroll"
 
 [inputs]
-parent = "ghcr.io/atty303/arch-toolbox-paru@sha256:06ceb240e8bb546c34c949c5e24b7b137c91ec1204c78fc93a9e8939b53fce25"
-arch_snapshot = "2026/08/08"
+base_digest = "sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295"
+arch_snapshot = "2026/08/11"
 aur_version = "1.12.17"
 aur_commit = "116b639b66e7a35e9194d6b462ddaadf5407b84d"
+host_spawn_version = "1.6.2"
+host_spawn_url = "https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64"
+host_spawn_sha256 = "077bc09a087292447ba17cfe2156a93f71bf56c4c6be8e38d3abe65c1240f34c"
 
 [build_args]
-BASE_IMAGE = "ghcr.io/atty303/arch-toolbox-paru@sha256:06ceb240e8bb546c34c949c5e24b7b137c91ec1204c78fc93a9e8939b53fce25"
-ARCH_SNAPSHOT = "2026/08/08"
+BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295"
+ARCH_SNAPSHOT = "2026/08/11"
 AUR_COMMIT = "116b639b66e7a35e9194d6b462ddaadf5407b84d"
 SCROLL_VERSION = "1.12.17"
+HOST_SPAWN_URL = "https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64"
+HOST_SPAWN_SHA256 = "077bc09a087292447ba17cfe2156a93f71bf56c4c6be8e38d3abe65c1240f34c"
+HOST_SPAWN_VERSION = "1.6.2"
 
 [expected]
 "io.atty303.distrobox.scroll-version" = "1.12.17"
+"io.atty303.distrobox.host-spawn-version" = "1.6.2"

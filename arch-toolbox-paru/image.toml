@@ -1,20 +1,10 @@
-schema = 2
+schema = 3
 name = "arch-toolbox-paru"
 repository = "ghcr.io/atty303/arch-toolbox-paru"
-context = "."
+base = "quay.io/toolbx/arch-toolbox:latest"
+context = ".."
 containerfile = "Containerfile"
-tag = "arch-{year}-{month}-{event_hash8}"
-
-[parent]
-external = "quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985"
-propagation = "on-next-build"
-
-[[triggers]]
-id = "base"
-type = "oci-digest"
-role = "build"
-image = "quay.io/toolbx/arch-toolbox:latest"
-monthly = true
+tag = "paru-{paru.version}-{event_hash8}"
 
 [[triggers]]
 id = "paru"

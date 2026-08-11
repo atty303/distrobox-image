@@ -10,13 +10,14 @@ Deno.test("event source hash excludes reference INI and test lock", async () => 
     `${"3".repeat(40)}:arch-scroll/distrobox.ini`,
     `${"4".repeat(40)}:arch-scroll/test.lock.toml`,
     `${"5".repeat(40)}:ci/main.ts`,
+    `${"6".repeat(40)}:common/arch/provision.sh`,
   ];
   const original = await sourceHashFromEntries(manifest, entries);
   const referenceChanged = await sourceHashFromEntries(manifest, [
     ...entries.slice(0, 2),
     `${"a".repeat(40)}:arch-scroll/distrobox.ini`,
     `${"b".repeat(40)}:arch-scroll/test.lock.toml`,
-    entries[4],
+    ...entries.slice(4),
   ]);
   const containerfileChanged = await sourceHashFromEntries(manifest, [
     `${"c".repeat(40)}:arch-scroll/Containerfile`,
@@ -24,4 +25,9 @@ Deno.test("event source hash excludes reference INI and test lock", async () => 
   ]);
   assertEquals(referenceChanged, original);
   assertNotEquals(containerfileChanged, original);
+  const commonChanged = await sourceHashFromEntries(manifest, [
+    ...entries.slice(0, -1),
+    `${"d".repeat(40)}:common/arch/provision.sh`,
+  ]);
+  assertNotEquals(commonChanged, original);
 });

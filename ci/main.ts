@@ -5,8 +5,14 @@ import { canonicalLock, loadLock, renderLock } from "./lock.ts";
 import { discoverManifests } from "./manifest.ts";
 import { planImage } from "./planner.ts";
 import { resolveArchSnapshot } from "./providers/arch_snapshot.ts";
-import { newestPublishedReference, publishedDigest, SkopeoRegistry } from "./registry.ts";
-import { liveResolve, productionLock, resolveManifest, resolveSourceHash } from "./resolver.ts";
+import { publishedDigest, SkopeoRegistry } from "./registry.ts";
+import {
+  liveResolve,
+  productionLock,
+  resolveBaseDigest,
+  resolveManifest,
+  resolveSourceHash,
+} from "./resolver.ts";
 import type { ImageLock, ImageManifest, PlanItem } from "./types.ts";
 
 const [command = "help", ...args] = Deno.args;
@@ -19,13 +25,6 @@ function select(names: string[]): ImageManifest[] {
   for (const name of requested) if (!byName.has(name)) throw new Error(`unknown image ${name}`);
   return manifests.filter((manifest) => requested.has(manifest.name));
 }
-function withParent(lock: ImageLock, parent: string): ImageLock {
-  return {
-    ...lock,
-    inputs: { ...lock.inputs, parent },
-    build_args: { ...lock.build_args, BASE_IMAGE: parent },
-  };
-}
 async function assertResolutionUnchanged(
   manifest: ImageManifest,
   lock: ImageLock,
@@ -33,47 +32,20 @@ async function assertResolutionUnchanged(
   const current = productionLock(
     manifest,
     await resolveManifest(manifest),
-    lock.inputs.parent,
+    await resolveBaseDigest(manifest),
     lock.inputs.arch_snapshot,
   );
   if (canonicalLock(current) !== canonicalLock(lock)) {
     throw new Error(`${manifest.name}: upstream inputs changed during build; refusing to publish`);
   }
 }
-async function resolvedParent(
-  manifest: ImageManifest,
-  resolved: Awaited<ReturnType<typeof resolveManifest>>,
-): Promise<string> {
-  if (manifest.parent?.external) {
-    const trigger = manifest.triggers.find((item) => item.type === "oci-digest");
-    return trigger
-      ? `${manifest.parent.external.split("@")[0]}@${resolved[trigger.id].value}`
-      : manifest.parent.external;
-  }
-  if (manifest.parent?.image) {
-    try {
-      return await newestPublishedReference(byName.get(manifest.parent.image)!);
-    } catch (error) {
-      if (!(error instanceof Error) || !error.message.startsWith("no published immutable parent")) {
-        throw error;
-      }
-      return (await loadLock(`${manifest.directory}/test.lock.toml`, manifest)).inputs.parent;
-    }
-  }
-  return (await loadLock(`${manifest.directory}/test.lock.toml`, manifest)).inputs.parent;
-}
 async function runIntegration(selected: ImageManifest[], distrobox: boolean) {
-  const localParents = new Map<string, string>();
   for (const manifest of selected) {
-    let lock = await loadLock(`${manifest.directory}/test.lock.toml`, manifest);
-    if (manifest.parent?.image && localParents.has(manifest.parent.image)) {
-      lock = withParent(lock, localParents.get(manifest.parent.image)!);
-    }
+    const lock = await loadLock(`${manifest.directory}/test.lock.toml`, manifest);
     const tag = `test-${manifest.name}`;
     const image = await buildImage(manifest, lock, tag);
     await smokeImage(manifest, lock, image);
     if (distrobox && manifest.reference) await smokeDistrobox(manifest, lock, image);
-    localParents.set(manifest.name, image);
   }
 }
 async function affected(base: string, head: string): Promise<ImageManifest[]> {
@@ -117,7 +89,7 @@ switch (command) {
       const lock = productionLock(
         manifest,
         resolved,
-        await resolvedParent(manifest, resolved),
+        await resolveBaseDigest(manifest),
         archSnapshot,
       );
       output.push(
@@ -127,7 +99,7 @@ switch (command) {
           await resolveSourceHash(manifest),
           lock,
           registry,
-          { now, force, nonce, manualReason },
+          { force, nonce, manualReason },
         ),
       );
     }
@@ -143,7 +115,6 @@ switch (command) {
     const items = new Map(
       plan.filter((item) => item.action === "build").map((item) => [item.image, item]),
     );
-    const publishedParents = new Map<string, string>();
     const registry = new SkopeoRegistry();
     const lockDirectory = Deno.env.get("LOCK_OUTPUT_DIR") ?? "production-locks";
     const resultPath = Deno.env.get("RESULT_OUTPUT") ?? "publish-result.json";
@@ -153,10 +124,7 @@ switch (command) {
       for (const manifest of manifests) {
         const item = items.get(manifest.name);
         if (!item?.tag || !item.lock) continue;
-        let lock = item.lock;
-        if (manifest.parent?.image && publishedParents.has(manifest.parent.image)) {
-          lock = withParent(lock, publishedParents.get(manifest.parent.image)!);
-        }
+        const lock = item.lock;
         await Deno.writeTextFile(`${lockDirectory}/${manifest.name}.lock.toml`, renderLock(lock));
         const image = await buildImage(manifest, lock, item.tag);
         await smokeImage(manifest, lock, image);
@@ -167,7 +135,6 @@ switch (command) {
         }
         await pushImage(image);
         const reference = await publishedDigest(manifest.repository, item.tag);
-        publishedParents.set(manifest.name, reference);
         results.push({
           image: manifest.name,
           repository: manifest.repository,
@@ -222,7 +189,7 @@ switch (command) {
     const lock = productionLock(
       manifest,
       resolved,
-      await resolvedParent(manifest, resolved),
+      await resolveBaseDigest(manifest),
       await resolveArchSnapshot(now),
     );
     const rendered = renderLock(lock);

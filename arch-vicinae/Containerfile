@@ -1,0 +1,24 @@
+ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295
+FROM ${BASE_IMAGE}
+ARG ARCH_SNAPSHOT
+ARG HOST_SPAWN_VERSION
+ARG HOST_SPAWN_URL
+ARG HOST_SPAWN_SHA256
+ARG VICINAE_VERSION
+ARG AUR_COMMIT
+COPY common/arch/provision.sh /tmp/provision-arch
+COPY common/arch/host-exec.sh /usr/bin/host-exec
+RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && \
+    test -n "${VICINAE_VERSION}" && test -n "${AUR_COMMIT}" && \
+    for attempt in 1 2 3; do \
+      if sudo -H -u builder git clone https://aur.archlinux.org/vicinae-bin.git /var/build/vicinae-bin; then break; fi; \
+      rm -rf /var/build/vicinae-bin; test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
+    done && \
+    sudo -H -u builder git -C /var/build/vicinae-bin checkout --detach "${AUR_COMMIT}" && \
+    sudo -H -u builder bash -lc 'cd /var/build/vicinae-bin && makepkg -si --noconfirm --needed' && \
+    installed="$(pacman -Q vicinae-bin | awk '{print $2}')" && test "${installed%-*}" = "${VICINAE_VERSION}" && \
+    rm -rf /var/build/vicinae-bin /tmp/provision-arch
+LABEL io.atty303.distrobox.vicinae-version="${VICINAE_VERSION}" \
+      io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \
+      io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
+ENTRYPOINT []

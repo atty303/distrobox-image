@@ -1,6 +1,9 @@
-ARG BASE_IMAGE=ghcr.io/atty303/arch-toolbox-paru@sha256:83434be38e62914c8830a0fcfbd1b7c1219d13edbdebeb365a42f77cddbf3fc4
+ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295
 FROM ${BASE_IMAGE}
 ARG ARCH_SNAPSHOT
+ARG HOST_SPAWN_VERSION
+ARG HOST_SPAWN_URL
+ARG HOST_SPAWN_SHA256
 ARG DMS_VERSION
 ARG DMS_BUNDLE_URL
 ARG DMS_BUNDLE_SHA256
@@ -12,8 +15,10 @@ ARG DGOP_URL
 ARG DGOP_SHA256
 ARG QUICKSHELL_AUR_COMMIT
 ARG QUICKSHELL_COMMIT
-RUN test -n "${ARCH_SNAPSHOT}" && test -n "${DMS_VERSION}" && test -n "${QUICKSHELL_AUR_COMMIT}" && test -n "${QUICKSHELL_COMMIT}" && \
-    printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${ARCH_SNAPSHOT}" > /etc/pacman.d/mirrorlist && \
+COPY common/arch/provision.sh /tmp/provision-arch
+COPY common/arch/host-exec.sh /usr/bin/host-exec
+RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && \
+    test -n "${DMS_VERSION}" && test -n "${QUICKSHELL_AUR_COMMIT}" && test -n "${QUICKSHELL_COMMIT}" && \
     for attempt in 1 2 3; do \
       if pacman -Sy --noconfirm --needed vulkan-headers cups-pk-helper kimageformats matugen cava pipewire-jack khal fprintd sway accountsservice; then break; fi; \
       test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
@@ -38,10 +43,11 @@ RUN test -n "${ARCH_SNAPSHOT}" && test -n "${DMS_VERSION}" && test -n "${QUICKSH
       curl --fail --location --output "/tmp/${name}.gz" "${url}" && \
       echo "${checksum}  /tmp/${name}.gz" | sha256sum --check --strict && \
       gzip --decompress --stdout "/tmp/${name}.gz" > "/usr/bin/${name}" && chmod 0755 "/usr/bin/${name}"; \
-    done && rm -rf /var/build/quickshell-git /tmp/dms-full /tmp/dms-full.tar.gz /tmp/*.gz
+    done && rm -rf /var/build/quickshell-git /tmp/dms-full /tmp/dms-full.tar.gz /tmp/*.gz /tmp/provision-arch
 LABEL io.atty303.distrobox.dms-version="${DMS_VERSION}" \
       io.atty303.distrobox.dsearch-version="${DSEARCH_VERSION}" \
       io.atty303.distrobox.dgop-version="${DGOP_VERSION}" \
       io.atty303.distrobox.quickshell-commit="${QUICKSHELL_COMMIT}" \
+      io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \
       io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
 ENTRYPOINT []

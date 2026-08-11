@@ -1,13 +1,10 @@
-schema = 2
+schema = 3
 name = "arch-dms"
 repository = "ghcr.io/atty303/arch-dms"
-context = "."
+base = "quay.io/toolbx/arch-toolbox:latest"
+context = ".."
 containerfile = "Containerfile"
 tag = "dms-{dms.version}-dsearch-{dsearch.version}-{event_hash8}"
-
-[parent]
-image = "arch-toolbox-paru"
-propagation = "on-next-build"
 
 [[triggers]]
 id = "dms"
@@ -60,6 +57,18 @@ repository = "https://git.outfoxxed.me/quickshell/quickshell.git"
 build_arg = "QUICKSHELL_COMMIT"
 label = "io.atty303.distrobox.quickshell-commit"
 
+[[triggers]]
+id = "host-spawn"
+type = "github-release"
+role = "input"
+repository = "1player/host-spawn"
+channel = "stable"
+build_arg = "HOST_SPAWN_VERSION"
+asset_pattern = "host-spawn-x86_64"
+url_arg = "HOST_SPAWN_URL"
+checksum_arg = "HOST_SPAWN_SHA256"
+label = "io.atty303.distrobox.host-spawn-version"
+
 [reference]
 section = "dms"
 nvidia_section = "dms-nvidia"
@@ -76,6 +85,8 @@ command = ["test", "-x", "/usr/bin/qs"]
 command = ["test", "-x", "/usr/bin/dgop"]
 [[smoke]]
 command = ["test", "-x", "/usr/bin/dsearch"]
+[[smoke]]
+command = ["sh", "-c", "host-spawn --version | grep -F \"$LOCK_HOST_SPAWN_VERSION\""]
 
 [[reference_smoke]]
 command = ["sh", "-c", "test \"$(readlink /usr/local/bin/uwsm)\" = /usr/bin/host-exec"]

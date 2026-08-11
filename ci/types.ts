@@ -23,12 +23,6 @@ export interface AurVersionTrigger extends TriggerBase {
   package: string;
 }
 
-export interface OciDigestTrigger extends TriggerBase {
-  type: "oci-digest";
-  image: string;
-  monthly?: boolean;
-}
-
 export interface GitCommitTrigger extends TriggerBase {
   type: "git-commit";
   repository: string;
@@ -38,7 +32,6 @@ export interface GitCommitTrigger extends TriggerBase {
 export type Trigger =
   | GitHubReleaseTrigger
   | AurVersionTrigger
-  | OciDigestTrigger
   | GitCommitTrigger;
 
 export interface SmokeCommand {
@@ -46,17 +39,13 @@ export interface SmokeCommand {
 }
 
 export interface ImageManifest {
-  schema: 2;
+  schema: 3;
   name: string;
   repository: string;
+  base: string;
   context: string;
   containerfile: string;
   tag: string;
-  parent?: {
-    image?: string;
-    external?: string;
-    propagation: "on-next-build";
-  };
   triggers: Trigger[];
   reference?: { section: string; nvidia_section?: string };
   smoke: SmokeCommand[];
@@ -65,7 +54,7 @@ export interface ImageManifest {
 }
 
 export interface ImageLock {
-  schema: 2;
+  schema: 3;
   image: string;
   inputs: Record<string, string>;
   build_args: Record<string, string>;

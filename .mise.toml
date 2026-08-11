@@ -1,6 +1,7 @@
 [tools]
 deno = "2.9.3"
 actionlint = "1.7.7"
+shellcheck = "0.11.0"
 act = "0.2.89"
 
 [env]

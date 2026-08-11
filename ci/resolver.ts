@@ -23,11 +23,16 @@ export async function liveResolve(trigger: Trigger): Promise<ResolvedValue> {
     }
     case "aur-version":
       return await resolveAurVersion(trigger.package);
-    case "oci-digest":
-      return await resolveOciDigest(trigger.image);
     case "git-commit":
       return await resolveGitCommit(trigger.repository, trigger.ref);
   }
+}
+
+export async function resolveBaseDigest(
+  manifest: ImageManifest,
+  resolver = resolveOciDigest,
+): Promise<string> {
+  return (await resolver(manifest.base)).value;
 }
 
 export async function resolveManifest(
@@ -44,6 +49,7 @@ export async function resolveManifest(
 export async function resolveSourceHash(manifest: ImageManifest): Promise<string> {
   const paths = [
     manifest.directory.replace(/^\.\//, ""),
+    "common",
     "ci",
     "deno.json",
     "deno.lock",
@@ -84,11 +90,18 @@ export async function sourceHashFromEntries(
 export function productionLock(
   manifest: ImageManifest,
   resolved: Record<string, ResolvedValue>,
-  parent: string,
+  baseDigest: string,
   archSnapshot: string,
 ): ImageLock {
-  const inputs: Record<string, string> = { parent, arch_snapshot: archSnapshot };
-  const build_args: Record<string, string> = { BASE_IMAGE: parent, ARCH_SNAPSHOT: archSnapshot };
+  const baseRepository = manifest.base.replace(/:[^/:]+$/, "");
+  const inputs: Record<string, string> = {
+    base_digest: baseDigest,
+    arch_snapshot: archSnapshot,
+  };
+  const build_args: Record<string, string> = {
+    BASE_IMAGE: `${baseRepository}@${baseDigest}`,
+    ARCH_SNAPSHOT: archSnapshot,
+  };
   const expected: Record<string, string> = {};
   for (const trigger of manifest.triggers) {
     const result = resolved[trigger.id];
@@ -118,9 +131,6 @@ export function productionLock(
         inputs[`${id}_commit`] = result.revision;
         if (trigger.revision_arg) build_args[trigger.revision_arg] = result.revision;
         break;
-      case "oci-digest":
-        inputs[`${id}_digest`] = result.value;
-        break;
       case "git-commit":
         inputs[`${id}_commit`] = result.value;
         break;
@@ -132,5 +142,5 @@ export function productionLock(
       expected[trigger.label] = value;
     }
   }
-  return { schema: 2, image: manifest.name, inputs, build_args, expected };
+  return { schema: 3, image: manifest.name, inputs, build_args, expected };
 }

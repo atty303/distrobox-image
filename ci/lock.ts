@@ -4,7 +4,7 @@ import type { ImageLock, ImageManifest, Trigger } from "./types.ts";
 const ROOT_KEYS = new Set(["schema", "image", "inputs", "build_args", "expected"]);
 
 function expectedInputKeys(manifest: ImageManifest): Set<string> {
-  const keys = new Set(["parent", "arch_snapshot"]);
+  const keys = new Set(["base_digest", "arch_snapshot"]);
   for (const trigger of manifest.triggers) {
     const id = trigger.id.replaceAll("-", "_");
     switch (trigger.type) {
@@ -19,9 +19,6 @@ function expectedInputKeys(manifest: ImageManifest): Set<string> {
       case "aur-version":
         keys.add(`${id}_version`);
         keys.add(`${id}_commit`);
-        break;
-      case "oci-digest":
-        keys.add(`${id}_digest`);
         break;
       case "git-commit":
         keys.add(`${id}_commit`);
@@ -52,11 +49,7 @@ function exactKeys(actual: Record<string, string>, expected: Set<string>, label:
 function triggerInputValue(lock: ImageLock, trigger: Trigger): string {
   const id = trigger.id.replaceAll("-", "_");
   if (trigger.label_source === "revision") return lock.inputs[`${id}_commit`];
-  return trigger.type === "git-commit"
-    ? lock.inputs[`${id}_commit`]
-    : trigger.type === "oci-digest"
-    ? lock.inputs[`${id}_digest`]
-    : lock.inputs[`${id}_version`];
+  return trigger.type === "git-commit" ? lock.inputs[`${id}_commit`] : lock.inputs[`${id}_version`];
 }
 
 export async function loadLock(path: string, manifest?: ImageManifest): Promise<ImageLock> {
@@ -67,7 +60,7 @@ export async function loadLock(path: string, manifest?: ImageManifest): Promise<
   >;
   const badRoot = Object.keys(raw).filter((key) => !ROOT_KEYS.has(key));
   if (badRoot.length) throw new Error(`${path}: unknown field(s): ${badRoot.join(", ")}`);
-  if (raw.schema !== 2 || typeof raw.image !== "string") throw new Error(`${path}: invalid lock`);
+  if (raw.schema !== 3 || typeof raw.image !== "string") throw new Error(`${path}: invalid lock`);
   for (const table of ["inputs", "build_args", "expected"] as const) {
     if (!raw[table] || typeof raw[table] !== "object" || Array.isArray(raw[table])) {
       throw new Error(`${path}: ${table} must be a table`);
@@ -95,8 +88,9 @@ export async function loadLock(path: string, manifest?: ImageManifest): Promise<
   if (!lock.build_args.BASE_IMAGE.includes("@sha256:")) {
     throw new Error(`${path}: BASE_IMAGE is not immutable`);
   }
-  if (lock.build_args.BASE_IMAGE !== lock.inputs.parent) {
-    throw new Error(`${path}: BASE_IMAGE does not match inputs.parent`);
+  const expectedBase = `${manifest.base.replace(/:[^/:]+$/, "")}@${lock.inputs.base_digest}`;
+  if (lock.build_args.BASE_IMAGE !== expectedBase) {
+    throw new Error(`${path}: BASE_IMAGE does not match inputs.base_digest`);
   }
   if (lock.build_args.ARCH_SNAPSHOT !== lock.inputs.arch_snapshot) {
     throw new Error(`${path}: ARCH_SNAPSHOT does not match inputs.arch_snapshot`);
