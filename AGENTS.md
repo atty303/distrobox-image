@@ -20,9 +20,10 @@ Trigger roles are:
 The event key contains the event and manifest schema versions, image name, build-trigger identities,
 the image/common build source hash, and an optional force nonce. AUR build triggers use the exact
 AUR commit as their identity. Base, Arch snapshot, and input-trigger values are excluded. The shared
-build overlay is included in every image's source hash, so changing it creates events for all
-images. Image-local `distrobox.ini` and `test.lock.toml` are also excluded from the event source
-hash: changing either requires checks but does not publish a tag.
+build overlay, including the reviewed `common/arch/host-spawn.env` pin, is included in every image's
+source hash, so changing it creates events for all images. Image-local `distrobox.ini` and
+`test.lock.toml` are excluded from the event source hash: changing either requires checks but does
+not publish a tag.
 
 Only event tags matching the manifest template are published. A tag is pushed only after its local
 image and reference-Distrobox smoke tests pass, so existence in GHCR means it passed pre-publish
@@ -37,7 +38,10 @@ Trigger types determine required version, commit, URL, checksum, and build-argum
 
 Vendor assets require versioned HTTPS URLs and SHA-256. Manifest-declared Git sources and AUR
 package repositories use exact commits. Sources selected by a pinned AUR package's PKGBUILD remain
-the AUR package's responsibility. Containerfiles consume only lock arguments, verify downloads,
+the AUR package's responsibility. The common `host-spawn` asset is pinned separately in
+`common/arch/host-spawn.env`; it is not a manifest trigger or per-image lock input. The common
+provisioner verifies its checksum and version and installs `host-spawn` and `host-exec` for every
+image. Containerfiles consume only lock arguments and common provisioning inputs, verify downloads,
 select the locked Arch snapshot, preserve the non-root builder, record expected metadata, and end
 with `ENTRYPOINT []`.
 

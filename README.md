@@ -8,7 +8,7 @@ pinned in your own configuration.
 
 | Image               | Contents                                            | A new tag is built when                                       |
 | ------------------- | --------------------------------------------------- | ------------------------------------------------------------- |
-| `arch-toolbox-paru` | Toolbox with `paru`, `host-spawn`, and `host-exec`  | paru, host-spawn, or the shared build overlay changes         |
+| `arch-toolbox-paru` | Toolbox with `paru`, `host-spawn`, and `host-exec`  | paru or the shared build overlay changes                      |
 | `arch-scroll`       | Scroll and its companion binaries                   | The Scroll AUR package source or shared build overlay changes |
 | `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop    | DMS, dsearch, or the shared build overlay changes             |
 | `arch-noctalia`     | Noctalia git shell and PipeWire/WirePlumber runtime | Noctalia main, its AUR package, or shared overlay changes     |
@@ -16,7 +16,9 @@ pinned in your own configuration.
 
 Each image is independent and starts directly from the locked Arch Toolbx base. Base and other
 input-only updates are adopted the next time an image has its own build event; they do not create
-tags by themselves. Changes to the repository's shared Arch build overlay rebuild every image.
+tags by themselves. Changes to the repository's shared Arch build overlay rebuild every image. This
+overlay includes the reviewed `host-spawn` version, download URL, and SHA-256 pin in
+`common/arch/host-spawn.env`; daily resolution does not update that pin.
 
 ## Use an image
 

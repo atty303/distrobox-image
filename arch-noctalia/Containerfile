@@ -1,14 +1,10 @@
 ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295
 FROM ${BASE_IMAGE}
 ARG ARCH_SNAPSHOT
-ARG HOST_SPAWN_VERSION
-ARG HOST_SPAWN_URL
-ARG HOST_SPAWN_SHA256
 ARG AUR_COMMIT
 ARG NOCTALIA_COMMIT
-COPY common/arch/provision.sh /tmp/provision-arch
-COPY common/arch/host-exec.sh /usr/bin/host-exec
-RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && \
+COPY common/arch /tmp/common-arch
+RUN chmod 0755 /tmp/common-arch/provision.sh && /tmp/common-arch/provision.sh && \
     test -n "${AUR_COMMIT}" && test -n "${NOCTALIA_COMMIT}" && \
     for attempt in 1 2 3; do \
       if pacman -Sy --needed --noconfirm pipewire wireplumber; then break; fi; \
@@ -25,9 +21,8 @@ RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && 
     sudo -H -u builder bash -lc 'cd /var/build/noctalia-git && makepkg -si --noconfirm --needed' && \
     pacman -Q noctalia-git && \
     printf '\nIgnorePkg = noctalia-git\n' >> /etc/pacman.conf && \
-    rm -rf /var/build/noctalia-git /tmp/provision-arch
+    rm -rf /var/build/noctalia-git /tmp/common-arch
 LABEL io.atty303.distrobox.noctalia-aur-commit="${AUR_COMMIT}" \
       io.atty303.distrobox.noctalia-commit="${NOCTALIA_COMMIT}" \
-      io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \
       io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
 ENTRYPOINT []

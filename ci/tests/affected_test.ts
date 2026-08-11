@@ -13,7 +13,7 @@ Deno.test("image-local changes stay local while common changes select all images
     ["arch-toolbox-paru"],
   );
   assertEquals(
-    affectedImages(manifests, ["common/arch/provision.sh"]).map((item) => item.name),
+    affectedImages(manifests, ["common/arch/host-spawn.env"]).map((item) => item.name),
     manifests.map((item) => item.name),
   );
 });

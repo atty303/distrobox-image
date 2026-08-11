@@ -15,18 +15,6 @@ build_arg = "VICINAE_VERSION"
 revision_arg = "AUR_COMMIT"
 label = "io.atty303.distrobox.vicinae-version"
 
-[[triggers]]
-id = "host-spawn"
-type = "github-release"
-role = "input"
-repository = "1player/host-spawn"
-channel = "stable"
-build_arg = "HOST_SPAWN_VERSION"
-asset_pattern = "host-spawn-x86_64"
-url_arg = "HOST_SPAWN_URL"
-checksum_arg = "HOST_SPAWN_SHA256"
-label = "io.atty303.distrobox.host-spawn-version"
-
 [reference]
 section = "vicinae"
 nvidia_section = "vicinae-nvidia"
@@ -36,7 +24,7 @@ command = ["/usr/bin/vicinae", "version"]
 [[smoke]]
 command = ["sh", "-c", "installed=$(pacman -Q vicinae-bin | awk '{print $2}') && test \"${installed%-*}\" = \"$LOCK_AUR_VERSION\""]
 [[smoke]]
-command = ["sh", "-c", "host-spawn --version | grep -F \"$LOCK_HOST_SPAWN_VERSION\""]
+command = ["host-spawn", "--version"]
 
 [[reference_smoke]]
 command = ["test", "-x", "/usr/bin/host-exec"]

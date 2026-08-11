@@ -15,9 +15,6 @@ dgop_url = "https://github.com/AvengeMedia/dgop/releases/download/v0.2.3/dgop-li
 dgop_sha256 = "8f2f1798184b28d0f4816cc4fd32c5d0bcb995bfeaa7789601346c763fdd19ed"
 quickshell_aur_commit = "2494139bce7b7fc71372da00b68fb745a2c72d90"
 quickshell_commit = "28771c7c74b42e20afca0b1b63980cb46515537c"
-host_spawn_version = "1.6.2"
-host_spawn_url = "https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64"
-host_spawn_sha256 = "077bc09a087292447ba17cfe2156a93f71bf56c4c6be8e38d3abe65c1240f34c"
 
 [build_args]
 BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295"
@@ -33,13 +30,9 @@ DGOP_SHA256 = "8f2f1798184b28d0f4816cc4fd32c5d0bcb995bfeaa7789601346c763fdd19ed"
 DGOP_VERSION = "0.2.3"
 QUICKSHELL_AUR_COMMIT = "2494139bce7b7fc71372da00b68fb745a2c72d90"
 QUICKSHELL_COMMIT = "28771c7c74b42e20afca0b1b63980cb46515537c"
-HOST_SPAWN_URL = "https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64"
-HOST_SPAWN_SHA256 = "077bc09a087292447ba17cfe2156a93f71bf56c4c6be8e38d3abe65c1240f34c"
-HOST_SPAWN_VERSION = "1.6.2"
 
 [expected]
 "io.atty303.distrobox.dms-version" = "1.5.3"
 "io.atty303.distrobox.dsearch-version" = "0.3.2"
 "io.atty303.distrobox.dgop-version" = "0.2.3"
 "io.atty303.distrobox.quickshell-commit" = "28771c7c74b42e20afca0b1b63980cb46515537c"
-"io.atty303.distrobox.host-spawn-version" = "1.6.2"

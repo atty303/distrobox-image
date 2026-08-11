@@ -5,12 +5,15 @@ import { eventKey, planImage, renderTag, tagPattern } from "../planner.ts";
 import { MemoryRegistry } from "../registry.ts";
 import { productionLock } from "../resolver.ts";
 Deno.test("event keys ignore input trigger values", async () => {
-  const manifest = (await discoverManifests()).find((m) => m.name === "arch-scroll")!;
+  const manifest = (await discoverManifests()).find((m) => m.name === "arch-dms")!;
   const a = {
-    aur: { value: "1.2.3", revision: "a".repeat(40) },
-    "host-spawn": { value: "1.6.2" },
+    dms: { value: "1.2.3" },
+    dsearch: { value: "1.2.3" },
+    dgop: { value: "1.2.3" },
+    "quickshell-aur": { value: "a".repeat(40) },
+    quickshell: { value: "b".repeat(40) },
   };
-  const b = { ...a, "host-spawn": { value: "1.7.0" } };
+  const b = { ...a, dgop: { value: "1.2.4" } };
   assertEquals(await eventKey(manifest, a, "tree"), await eventKey(manifest, b, "tree"));
 });
 Deno.test("AUR source commits create Scroll build events", async () => {
@@ -27,7 +30,6 @@ Deno.test("Noctalia source and AUR commits create build events", async () => {
   const resolved = {
     aur: { value: "5.0.0.r1.g111111111", revision: "a".repeat(40) },
     noctalia: { value: "b".repeat(40) },
-    "host-spawn": { value: "1.6.2" },
   };
   const key = await eventKey(manifest, resolved, "tree");
   assertEquals(
@@ -93,10 +95,6 @@ Deno.test("production lock maps provider metadata", async () => {
       metadata: { asset_url: "https://example/paru", asset_sha256: "b".repeat(64) },
     },
     "paru-source": { value: "d".repeat(40) },
-    "host-spawn": {
-      value: "1.7.0",
-      metadata: { asset_url: "https://example/host-spawn", asset_sha256: "c".repeat(64) },
-    },
   };
   const lock = productionLock(
     manifest,
@@ -106,7 +104,6 @@ Deno.test("production lock maps provider metadata", async () => {
   );
   assertEquals(lock.build_args.PARU_VERSION, "2.2.0");
   assertEquals(lock.build_args.PARU_COMMIT, "d".repeat(40));
-  assertEquals(lock.inputs.host_spawn_sha256, "c".repeat(64));
   assertEquals(lock.inputs.base_digest, `sha256:${"a".repeat(64)}`);
   assertEquals(
     lock.build_args.BASE_IMAGE,

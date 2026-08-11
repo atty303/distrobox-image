@@ -1,14 +1,10 @@
 ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295
 FROM ${BASE_IMAGE}
 ARG ARCH_SNAPSHOT
-ARG HOST_SPAWN_VERSION
-ARG HOST_SPAWN_URL
-ARG HOST_SPAWN_SHA256
 ARG SCROLL_VERSION
 ARG AUR_COMMIT
-COPY common/arch/provision.sh /tmp/provision-arch
-COPY common/arch/host-exec.sh /usr/bin/host-exec
-RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && \
+COPY common/arch /tmp/common-arch
+RUN chmod 0755 /tmp/common-arch/provision.sh && /tmp/common-arch/provision.sh && \
     test -n "${SCROLL_VERSION}" && test -n "${AUR_COMMIT}" && \
     for attempt in 1 2 3; do \
       if sudo -H -u builder git clone https://aur.archlinux.org/sway-scroll.git /var/build/sway-scroll; then break; fi; \
@@ -16,8 +12,7 @@ RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && 
     done && \
     sudo -H -u builder git -C /var/build/sway-scroll checkout --detach "${AUR_COMMIT}" && \
     sudo -H -u builder bash -lc 'cd /var/build/sway-scroll && makepkg -si --noconfirm --needed' && \
-    rm -rf /var/build/sway-scroll /tmp/provision-arch
+    rm -rf /var/build/sway-scroll /tmp/common-arch
 LABEL io.atty303.distrobox.scroll-version="${SCROLL_VERSION}" \
-      io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \
       io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
 ENTRYPOINT []

@@ -3,12 +3,8 @@ FROM ${BASE_IMAGE}
 ARG ARCH_SNAPSHOT
 ARG PARU_VERSION
 ARG PARU_COMMIT
-ARG HOST_SPAWN_VERSION
-ARG HOST_SPAWN_URL
-ARG HOST_SPAWN_SHA256
-COPY common/arch/provision.sh /tmp/provision-arch
-COPY common/arch/host-exec.sh /usr/bin/host-exec
-RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && \
+COPY common/arch /tmp/common-arch
+RUN chmod 0755 /tmp/common-arch/provision.sh && /tmp/common-arch/provision.sh && \
     pacman -S --needed --noconfirm rust && \
     for attempt in 1 2 3; do \
       if sudo -H -u builder git clone https://github.com/Morganamilo/paru.git /var/build/paru; then break; fi; \
@@ -20,9 +16,8 @@ RUN chmod 0755 /tmp/provision-arch /usr/bin/host-exec && /tmp/provision-arch && 
     install -Dm0644 /var/build/paru/paru.conf /etc/paru.conf && \
     install -Dm0644 /var/build/paru/man/paru.8 /usr/share/man/man8/paru.8 && \
     install -Dm0644 /var/build/paru/man/paru.conf.5 /usr/share/man/man5/paru.conf.5 && \
-    rm -rf /var/build/paru /tmp/provision-arch
+    rm -rf /var/build/paru /tmp/common-arch
 LABEL io.atty303.distrobox.paru-version="${PARU_VERSION}" \
       io.atty303.distrobox.paru-commit="${PARU_COMMIT}" \
-      io.atty303.distrobox.host-spawn-version="${HOST_SPAWN_VERSION}" \
       io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
 ENTRYPOINT []
