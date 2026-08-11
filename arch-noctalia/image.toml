@@ -4,16 +4,25 @@ repository = "ghcr.io/atty303/arch-noctalia"
 base = "quay.io/toolbx/arch-toolbox:latest"
 context = ".."
 containerfile = "Containerfile"
-tag = "noctalia-{event_hash8}"
+tag = "noctalia-git-{event_hash8}"
 
 [[triggers]]
-id = "aur-source"
+id = "aur"
+type = "aur-version"
+role = "build"
+package = "noctalia-git"
+revision_arg = "AUR_COMMIT"
+label = "io.atty303.distrobox.noctalia-aur-commit"
+label_source = "revision"
+
+[[triggers]]
+id = "noctalia"
 type = "git-commit"
 role = "build"
-repository = "https://aur.archlinux.org/noctalia.git"
-ref = "HEAD"
-build_arg = "AUR_COMMIT"
-label = "io.atty303.distrobox.aur-commit"
+repository = "https://github.com/noctalia-dev/noctalia.git"
+ref = "refs/heads/main"
+build_arg = "NOCTALIA_COMMIT"
+label = "io.atty303.distrobox.noctalia-commit"
 
 [[triggers]]
 id = "host-spawn"
@@ -34,7 +43,9 @@ nvidia_section = "noctalia-nvidia"
 [[smoke]]
 command = ["/usr/bin/noctalia", "--version"]
 [[smoke]]
-command = ["pacman", "-Q", "noctalia"]
+command = ["pacman", "-Q", "noctalia-git"]
+[[smoke]]
+command = ["sh", "-c", "installed=$(pacman -Q noctalia-git | awk '{print $2}'); short=$(printf '%.9s' \"$LOCK_NOCTALIA_COMMIT\"); case \"${installed%-*}\" in *.g\"$short\") ;; *) exit 1;; esac"]
 [[smoke]]
 command = ["test", "-f", "/usr/share/noctalia/assets/templates/scroll/scroll"]
 [[smoke]]

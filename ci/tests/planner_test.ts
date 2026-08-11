@@ -22,6 +22,33 @@ Deno.test("AUR source commits create Scroll build events", async () => {
     false,
   );
 });
+Deno.test("Noctalia source and AUR commits create build events", async () => {
+  const manifest = (await discoverManifests()).find((m) => m.name === "arch-noctalia")!;
+  const resolved = {
+    aur: { value: "5.0.0.r1.g111111111", revision: "a".repeat(40) },
+    noctalia: { value: "b".repeat(40) },
+    "host-spawn": { value: "1.6.2" },
+  };
+  const key = await eventKey(manifest, resolved, "tree");
+  assertEquals(
+    key === await eventKey(manifest, {
+      ...resolved,
+      aur: { ...resolved.aur, revision: "c".repeat(40) },
+    }, "tree"),
+    false,
+  );
+  assertEquals(
+    key === await eventKey(manifest, {
+      ...resolved,
+      noctalia: { value: "d".repeat(40) },
+    }, "tree"),
+    false,
+  );
+  assertEquals(
+    renderTag(manifest.tag, resolved, key),
+    `noctalia-git-${key.slice(0, 8)}`,
+  );
+});
 Deno.test("tag rendering is deterministic", () =>
   assertEquals(
     renderTag("x-{x.version}-{event_hash8}", { x: { value: "v1.0" } }, "abcdef012345"),

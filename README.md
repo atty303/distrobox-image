@@ -6,13 +6,13 @@ pinned in your own configuration.
 
 ## Images
 
-| Image               | Contents                                           | A new tag is built when                                       |
-| ------------------- | -------------------------------------------------- | ------------------------------------------------------------- |
-| `arch-toolbox-paru` | Toolbox with `paru`, `host-spawn`, and `host-exec` | paru, host-spawn, or the shared build overlay changes         |
-| `arch-scroll`       | Scroll and its companion binaries                  | The Scroll AUR package source or shared build overlay changes |
-| `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop   | DMS, dsearch, or the shared build overlay changes             |
-| `arch-noctalia`     | Noctalia shell and PipeWire/WirePlumber runtime    | The Noctalia AUR source or shared build overlay changes       |
-| `arch-vicinae`      | Vicinae application launcher                       | The Vicinae AUR source or shared build overlay changes        |
+| Image               | Contents                                            | A new tag is built when                                       |
+| ------------------- | --------------------------------------------------- | ------------------------------------------------------------- |
+| `arch-toolbox-paru` | Toolbox with `paru`, `host-spawn`, and `host-exec`  | paru, host-spawn, or the shared build overlay changes         |
+| `arch-scroll`       | Scroll and its companion binaries                   | The Scroll AUR package source or shared build overlay changes |
+| `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop    | DMS, dsearch, or the shared build overlay changes             |
+| `arch-noctalia`     | Noctalia git shell and PipeWire/WirePlumber runtime | Noctalia main, its AUR package, or shared overlay changes     |
+| `arch-vicinae`      | Vicinae application launcher                        | The Vicinae AUR source or shared build overlay changes        |
 
 Each image is independent and starts directly from the locked Arch Toolbx base. Base and other
 input-only updates are adopted the next time an image has its own build event; they do not create
