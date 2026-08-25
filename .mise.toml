@@ -30,6 +30,12 @@ run = "deno test --allow-read=. ci/tests/planner_test.ts"
 [tasks."lint:actions"]
 run = "actionlint"
 
+[tasks."lint:shell"]
+run = "shellcheck arch-scroll/prepare-pkgbuild.sh ci/tests/pkgbuild.sh"
+
+[tasks."test:pkgbuild"]
+run = "sh ci/tests/pkgbuild.sh"
+
 [tasks."test:actions"]
 run = "act pull_request -j static -W .github/workflows/check.yml -P ubuntu-latest=docker.io/catthehacker/ubuntu@sha256:3155564c7ca813710844d2e6a664c3c825646234ce9a00b1494e8d5d809817c8"
 
@@ -69,7 +75,7 @@ run = "deno run --allow-read=.,/tmp --allow-write=.,/tmp --allow-net=api.github.
 run = "deno run --allow-read=.,/tmp --allow-write=.,/tmp --allow-net=api.github.com,aur.archlinux.org,archive.archlinux.org,quay.io,ghcr.io --allow-run=skopeo,git ci/main.ts refresh-lock"
 
 [tasks.check]
-depends = ["fmt:check", "lint", "typecheck", "validate", "test:unit", "test:plan", "lint:actions"]
+depends = ["fmt:check", "lint", "typecheck", "validate", "test:unit", "test:plan", "lint:actions", "lint:shell", "test:pkgbuild"]
 
 [tasks."check:all"]
 run = """

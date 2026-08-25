@@ -1,18 +1,23 @@
 ARG BASE_IMAGE=quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295
 FROM ${BASE_IMAGE}
 ARG ARCH_SNAPSHOT
-ARG SCROLL_VERSION
+ARG SCROLL_RELEASE
+ARG SCROLL_COMMIT
 ARG AUR_COMMIT
 COPY common/arch /tmp/common-arch
-RUN chmod 0755 /tmp/common-arch/provision.sh && /tmp/common-arch/provision.sh && \
-    test -n "${SCROLL_VERSION}" && test -n "${AUR_COMMIT}" && \
+COPY arch-scroll/prepare-pkgbuild.sh /tmp/prepare-pkgbuild.sh
+RUN chmod 0755 /tmp/common-arch/provision.sh /tmp/prepare-pkgbuild.sh && /tmp/common-arch/provision.sh && \
+    test -n "${SCROLL_RELEASE}" && test -n "${SCROLL_COMMIT}" && test -n "${AUR_COMMIT}" && \
     for attempt in 1 2 3; do \
       if sudo -H -u builder git clone https://aur.archlinux.org/sway-scroll.git /var/build/sway-scroll; then break; fi; \
       rm -rf /var/build/sway-scroll; test "${attempt}" -lt 3 || exit 1; sleep "${attempt}"; \
     done && \
     sudo -H -u builder git -C /var/build/sway-scroll checkout --detach "${AUR_COMMIT}" && \
+    package_version=$(sudo -H -u builder /tmp/prepare-pkgbuild.sh /var/build/sway-scroll/PKGBUILD "${SCROLL_RELEASE}" "${SCROLL_COMMIT}") && \
     sudo -H -u builder bash -lc 'cd /var/build/sway-scroll && makepkg -si --noconfirm --needed' && \
-    rm -rf /var/build/sway-scroll /tmp/common-arch
-LABEL io.atty303.distrobox.scroll-version="${SCROLL_VERSION}" \
+    installed=$(pacman -Q sway-scroll | awk '{print $2}') && test "${installed%-*}" = "${package_version}" && \
+    rm -rf /var/build/sway-scroll /tmp/common-arch /tmp/prepare-pkgbuild.sh
+LABEL io.atty303.distrobox.scroll-source-commit="${SCROLL_COMMIT}" \
+      io.atty303.distrobox.scroll-recipe-commit="${AUR_COMMIT}" \
       io.atty303.distrobox.arch-snapshot="${ARCH_SNAPSHOT}"
 ENTRYPOINT []

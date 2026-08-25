@@ -9,7 +9,7 @@ pinned in your own configuration.
 | Image               | Contents                                            | A new tag is built when                                       |
 | ------------------- | --------------------------------------------------- | ------------------------------------------------------------- |
 | `arch-toolbox-paru` | Toolbox with `paru`, `host-spawn`, and `host-exec`  | paru or the shared build overlay changes                      |
-| `arch-scroll`       | Scroll and its companion binaries                   | The Scroll AUR package source or shared build overlay changes |
+| `arch-scroll`       | Downstream Scroll with local patches and companions | The downstream Scroll release or shared build overlay changes |
 | `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop    | DMS, dsearch, or the shared build overlay changes             |
 | `arch-noctalia`     | Noctalia git shell and PipeWire/WirePlumber runtime | Noctalia main, its AUR package, or shared overlay changes     |
 | `arch-vicinae`      | Vicinae application launcher                        | The Vicinae AUR source or shared build overlay changes        |
@@ -19,6 +19,12 @@ input-only updates are adopted the next time an image has its own build event; t
 tags by themselves. Changes to the repository's shared Arch build overlay rebuild every image. This
 overlay includes the reviewed `host-spawn` version, download URL, and SHA-256 pin in
 `common/arch/host-spawn.env`; daily resolution does not update that pin.
+
+`arch-scroll` follows stable releases from `atty303/scroll`. At each image event it locks the
+current `sway-scroll` AUR commit as a build recipe, then changes only that recipe's `pkgver` and
+Scroll source to the exact downstream release commit. AUR publication timing therefore neither gates
+nor triggers the image; dependency and packaging changes are adopted from the recipe available when
+the next downstream image is built.
 
 ## Use an image
 

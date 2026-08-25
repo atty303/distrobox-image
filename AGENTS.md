@@ -25,6 +25,12 @@ source hash, so changing it creates events for all images. Image-local `distrobo
 `test.lock.toml` are excluded from the event source hash: changing either requires checks but does
 not publish a tag.
 
+For `arch-scroll`, the stable GitHub release from `atty303/scroll` is the build trigger. The current
+`sway-scroll` AUR commit is an input-only packaging recipe: AUR changes neither gate nor create an
+event. Lock the exact downstream source and AUR recipe commits, record both as OCI labels, and
+change only the recipe's simple `pkgver` assignment and upstream Scroll tag source. Fail if that
+expected PKGBUILD structure is absent; do not silently maintain a second packaging recipe here.
+
 Only event tags matching the manifest template are published. A tag is pushed only after its local
 image and reference-Distrobox smoke tests pass, so existence in GHCR means it passed pre-publish
 verification. Never overwrite a tag, publish moving aliases, or add automatic tag cleanup.
@@ -37,13 +43,13 @@ Trigger types determine required version, commit, URL, checksum, and build-argum
 `inputs`, `build_args`, and full OCI-label keys in `expected` consistent.
 
 Vendor assets require versioned HTTPS URLs and SHA-256. Manifest-declared Git sources and AUR
-package repositories use exact commits. Sources selected by a pinned AUR package's PKGBUILD remain
-the AUR package's responsibility. The common `host-spawn` asset is pinned separately in
-`common/arch/host-spawn.env`; it is not a manifest trigger or per-image lock input. The common
-provisioner verifies its checksum and version and installs `host-spawn` and `host-exec` for every
-image. Containerfiles consume only lock arguments and common provisioning inputs, verify downloads,
-select the locked Arch snapshot, preserve the non-root builder, record expected metadata, and end
-with `ENTRYPOINT []`.
+package repositories use exact commits. Except for the explicit `arch-scroll` downstream source
+rewrite above, sources selected by a pinned AUR package's PKGBUILD remain the AUR package's
+responsibility. The common `host-spawn` asset is pinned separately in `common/arch/host-spawn.env`;
+it is not a manifest trigger or per-image lock input. The common provisioner verifies its checksum
+and version and installs `host-spawn` and `host-exec` for every image. Containerfiles consume only
+lock arguments and common provisioning inputs, verify downloads, select the locked Arch snapshot,
+preserve the non-root builder, record expected metadata, and end with `ENTRYPOINT []`.
 
 ## Build and publication
 

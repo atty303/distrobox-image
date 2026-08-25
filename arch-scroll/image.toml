@@ -4,16 +4,27 @@ repository = "ghcr.io/atty303/arch-scroll"
 base = "quay.io/toolbx/arch-toolbox:latest"
 context = ".."
 containerfile = "Containerfile"
-tag = "scroll-{aur.version}-{event_hash8}"
+tag = "scroll-{scroll.version}-{event_hash8}"
+
+[[triggers]]
+id = "scroll"
+type = "github-release"
+role = "build"
+repository = "atty303/scroll"
+channel = "stable"
+build_arg = "SCROLL_RELEASE"
+revision_arg = "SCROLL_COMMIT"
+label = "io.atty303.distrobox.scroll-source-commit"
+label_source = "revision"
 
 [[triggers]]
 id = "aur"
 type = "aur-version"
-role = "build"
+role = "input"
 package = "sway-scroll"
-build_arg = "SCROLL_VERSION"
 revision_arg = "AUR_COMMIT"
-label = "io.atty303.distrobox.scroll-version"
+label = "io.atty303.distrobox.scroll-recipe-commit"
+label_source = "revision"
 
 [reference]
 section = "scroll"
@@ -22,7 +33,7 @@ nvidia_section = "scroll-nvidia"
 [[smoke]]
 command = ["/usr/bin/scroll", "--version"]
 [[smoke]]
-command = ["sh", "-c", "installed=$(pacman -Q sway-scroll | awk '{print $2}') && test \"${installed%-*}\" = \"$LOCK_AUR_VERSION\""]
+command = ["sh", "-c", "installed=$(pacman -Q sway-scroll | awk '{print $2}') && expected=$(printf '%s\\n' \"$LOCK_SCROLL_VERSION\" | sed 's/-atty\\./.atty./') && test \"${installed%-*}\" = \"$expected\""]
 [[smoke]]
 command = ["test", "-x", "/usr/bin/scrollmsg"]
 [[smoke]]

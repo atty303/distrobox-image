@@ -16,12 +16,20 @@ Deno.test("event keys ignore input trigger values", async () => {
   const b = { ...a, dgop: { value: "1.2.4" } };
   assertEquals(await eventKey(manifest, a, "tree"), await eventKey(manifest, b, "tree"));
 });
-Deno.test("AUR source commits create Scroll build events", async () => {
+Deno.test("Scroll releases create events while AUR recipe updates remain inputs", async () => {
   const manifest = (await discoverManifests()).find((m) => m.name === "arch-scroll")!;
-  const a = { aur: { value: "1.2.3", revision: "a".repeat(40) } };
-  const b = { aur: { value: "1.2.3", revision: "b".repeat(40) } };
+  const a = {
+    scroll: { value: "1.2.3-atty.1", revision: "a".repeat(40) },
+    aur: { value: "1.2.3", revision: "b".repeat(40) },
+  };
+  const recipeUpdated = { ...a, aur: { value: "1.2.4", revision: "c".repeat(40) } };
+  const releaseUpdated = { ...a, scroll: { value: "1.2.4-atty.1", revision: "d".repeat(40) } };
   assertEquals(
-    await eventKey(manifest, a, "tree") === await eventKey(manifest, b, "tree"),
+    await eventKey(manifest, a, "tree"),
+    await eventKey(manifest, recipeUpdated, "tree"),
+  );
+  assertEquals(
+    await eventKey(manifest, a, "tree") === await eventKey(manifest, releaseUpdated, "tree"),
     false,
   );
 });
@@ -58,13 +66,16 @@ Deno.test("tag rendering is deterministic", () =>
   ));
 Deno.test("tag pattern accepts only the manifest's immutable tags", async () => {
   const manifest = (await discoverManifests()).find((item) => item.name === "arch-scroll")!;
-  assertMatch("scroll-1.12.17-abcdef01", tagPattern(manifest.tag));
+  assertMatch("scroll-1.12.21-atty.1-abcdef01", tagPattern(manifest.tag));
   assertEquals(tagPattern(manifest.tag).test("latest"), false);
-  assertEquals(tagPattern(manifest.tag).test("verified-scroll-1.12.17-abcdef01"), false);
+  assertEquals(tagPattern(manifest.tag).test("verified-scroll-1.12.21-atty.1-abcdef01"), false);
 });
 Deno.test("existing published tag skips and force requires a reason", async () => {
   const manifest = (await discoverManifests()).find((item) => item.name === "arch-scroll")!;
-  const resolved = { aur: { value: "1", revision: "a".repeat(40) } };
+  const resolved = {
+    scroll: { value: "1.12.21-atty.1", revision: "a".repeat(40) },
+    aur: { value: "1.12.21", revision: "b".repeat(40) },
+  };
   const lock = await loadLock(`${manifest.directory}/test.lock.toml`, manifest);
   const key = await eventKey(manifest, resolved, "tree");
   const tag = renderTag(manifest.tag, resolved, key);
