@@ -4,18 +4,18 @@ image = "arch-scroll"
 [inputs]
 base_digest = "sha256:cd949681ba8af28c6eb64641506bd2dee80ebe297b95a12beadfa401b8392d87"
 arch_snapshot = "2026/08/24"
-scroll_version = "1.12.21-atty.2"
-scroll_commit = "657a6f61cc526b63a95cf7c13940a2968076d0cf"
+scroll_version = "1.12.21-atty.3"
+scroll_commit = "4d5c3b2763f16e55260536119d6c432c2ea36141"
 aur_version = "1.12.21"
 aur_commit = "d41e10300d9a0badd242ee0c60d21938dcc39124"
 
 [build_args]
 BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:cd949681ba8af28c6eb64641506bd2dee80ebe297b95a12beadfa401b8392d87"
 ARCH_SNAPSHOT = "2026/08/24"
-SCROLL_COMMIT = "657a6f61cc526b63a95cf7c13940a2968076d0cf"
-SCROLL_RELEASE = "1.12.21-atty.2"
+SCROLL_COMMIT = "4d5c3b2763f16e55260536119d6c432c2ea36141"
+SCROLL_RELEASE = "1.12.21-atty.3"
 AUR_COMMIT = "d41e10300d9a0badd242ee0c60d21938dcc39124"
 
 [expected]
-"io.atty303.distrobox.scroll-source-commit" = "657a6f61cc526b63a95cf7c13940a2968076d0cf"
+"io.atty303.distrobox.scroll-source-commit" = "4d5c3b2763f16e55260536119d6c432c2ea36141"
 "io.atty303.distrobox.scroll-recipe-commit" = "d41e10300d9a0badd242ee0c60d21938dcc39124"
