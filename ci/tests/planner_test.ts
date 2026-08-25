@@ -4,18 +4,6 @@ import { discoverManifests } from "../manifest.ts";
 import { eventKey, planImage, renderTag, tagPattern } from "../planner.ts";
 import { MemoryRegistry } from "../registry.ts";
 import { productionLock } from "../resolver.ts";
-Deno.test("event keys ignore input trigger values", async () => {
-  const manifest = (await discoverManifests()).find((m) => m.name === "arch-dms")!;
-  const a = {
-    dms: { value: "1.2.3" },
-    dsearch: { value: "1.2.3" },
-    dgop: { value: "1.2.3" },
-    "quickshell-aur": { value: "a".repeat(40) },
-    quickshell: { value: "b".repeat(40) },
-  };
-  const b = { ...a, dgop: { value: "1.2.4" } };
-  assertEquals(await eventKey(manifest, a, "tree"), await eventKey(manifest, b, "tree"));
-});
 Deno.test("Scroll releases create events while AUR recipe updates remain inputs", async () => {
   const manifest = (await discoverManifests()).find((m) => m.name === "arch-scroll")!;
   const a = {

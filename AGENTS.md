@@ -6,11 +6,13 @@ the operator's real Distrobox state.
 
 ## Image contract
 
-Each image directory contains `Containerfile`, `image.toml`, and `test.lock.toml`. Images with a
-reference Distrobox also contain a fixed-name `distrobox.ini`. Manifest schema 3 declares the GHCR
-repository, immutable tag template, tagged external base, triggers, image smoke commands, and an
-optional reference Distrobox with reference-only smoke commands. Unknown or trigger-inapplicable
-fields are errors. Images are independent; internal image parents and an image DAG are not used.
+Each active image directory contains `Containerfile`, `image.toml`, and `test.lock.toml`. A retained
+directory whose manifest is named `image.toml.disabled` is inactive and excluded from discovery,
+validation, builds, and publication. Images with a reference Distrobox also contain a fixed-name
+`distrobox.ini`. Manifest schema 3 declares the GHCR repository, immutable tag template, tagged
+external base, triggers, image smoke commands, and an optional reference Distrobox with
+reference-only smoke commands. Unknown or trigger-inapplicable fields are errors. Images are
+independent; internal image parents and an image DAG are not used.
 
 Trigger roles are:
 

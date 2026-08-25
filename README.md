@@ -10,7 +10,6 @@ pinned in your own configuration.
 | ------------------- | --------------------------------------------------- | ------------------------------------------------------------- |
 | `arch-toolbox-paru` | Toolbox with `paru`, `host-spawn`, and `host-exec`  | paru or the shared build overlay changes                      |
 | `arch-scroll`       | Downstream Scroll with local patches and companions | The downstream Scroll release or shared build overlay changes |
-| `arch-dms`          | DankMaterialShell, Quickshell, dsearch, and dgop    | DMS, dsearch, or the shared build overlay changes             |
 | `arch-noctalia`     | Noctalia git shell and PipeWire/WirePlumber runtime | Noctalia main, its AUR package, or shared overlay changes     |
 | `arch-vicinae`      | Vicinae application launcher                        | The Vicinae AUR source or shared build overlay changes        |
 
@@ -25,6 +24,9 @@ current `sway-scroll` AUR commit as a build recipe, then changes only that recip
 Scroll source to the exact downstream release commit. AUR publication timing therefore neither gates
 nor triggers the image; dependency and packaging changes are adopted from the recipe available when
 the next downstream image is built.
+
+The retained `arch-dms` sources are inactive. Its manifest is named `image.toml.disabled`, so
+discovery, validation, CI builds, and publication exclude it.
 
 ## Use an image
 
