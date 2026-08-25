@@ -2,14 +2,14 @@ schema = 3
 image = "arch-toolbox-paru"
 
 [inputs]
-base_digest = "sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295"
-arch_snapshot = "2026/08/11"
+base_digest = "sha256:cd949681ba8af28c6eb64641506bd2dee80ebe297b95a12beadfa401b8392d87"
+arch_snapshot = "2026/08/24"
 paru_version = "2.1.0"
 paru_source_commit = "9ac3578807a87858651e81a02586ceb947686e7c"
 
 [build_args]
-BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295"
-ARCH_SNAPSHOT = "2026/08/11"
+BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:cd949681ba8af28c6eb64641506bd2dee80ebe297b95a12beadfa401b8392d87"
+ARCH_SNAPSHOT = "2026/08/24"
 PARU_VERSION = "2.1.0"
 PARU_COMMIT = "9ac3578807a87858651e81a02586ceb947686e7c"
 

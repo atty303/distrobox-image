@@ -2,16 +2,16 @@ schema = 3
 image = "arch-vicinae"
 
 [inputs]
-base_digest = "sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295"
-arch_snapshot = "2026/08/11"
-aur_version = "0.24.0"
-aur_commit = "b71b0f8981b09b3c24dba44a7b028462fdabb918"
+base_digest = "sha256:cd949681ba8af28c6eb64641506bd2dee80ebe297b95a12beadfa401b8392d87"
+arch_snapshot = "2026/08/24"
+aur_version = "0.26.3"
+aur_commit = "154ff8d42b27330e1bd8a9196a850ef5c09fe02f"
 
 [build_args]
-BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:6ec5035d4038d6dbec37ce67891e9fc2e0dfa6566fa9635a61e281115ef5c295"
-ARCH_SNAPSHOT = "2026/08/11"
-AUR_COMMIT = "b71b0f8981b09b3c24dba44a7b028462fdabb918"
-VICINAE_VERSION = "0.24.0"
+BASE_IMAGE = "quay.io/toolbx/arch-toolbox@sha256:cd949681ba8af28c6eb64641506bd2dee80ebe297b95a12beadfa401b8392d87"
+ARCH_SNAPSHOT = "2026/08/24"
+AUR_COMMIT = "154ff8d42b27330e1bd8a9196a850ef5c09fe02f"
+VICINAE_VERSION = "0.26.3"
 
 [expected]
-"io.atty303.distrobox.vicinae-version" = "0.24.0"
+"io.atty303.distrobox.vicinae-version" = "0.26.3"
